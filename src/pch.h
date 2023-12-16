@@ -2,6 +2,7 @@
 
 #include <RE/Skyrim.h>
 #include <SKSE/SKSE.h>
+#include <unordered_set>
 
 namespace WinAPI = SKSE::WinAPI;
 namespace logs = SKSE::log;

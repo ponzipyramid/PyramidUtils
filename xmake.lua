@@ -2,7 +2,7 @@
 set_xmakever("2.7.8")
 
 -- set project
-set_project("template-commonlibsse-ng")
+set_project("pyramid-utils")
 set_version("0.0.0")
 set_license("MIT")
 set_languages("c++20")
@@ -28,13 +28,13 @@ set_policy("package.requires_lock", true)
 add_requires("commonlibsse-ng", { configs = { skyrim_vr = false } })
 
 -- targets
-target("template-plugin")
+target("PyramidUtils")
     -- add packages to target
     add_packages("fmt", "spdlog", "commonlibsse-ng")
 
     -- add commonlibsse-ng plugin
     add_rules("@commonlibsse-ng/plugin", {
-        name = "template-plugin",
+        name = "pyramid-utils",
         author = "Qudix",
         description = "SKSE64 plugin template using CommonLibSSE-NG"
     })

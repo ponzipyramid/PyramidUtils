@@ -9,7 +9,7 @@
                 commit = "2a40e4b0e57fa3231195238ed984000a8100aa70",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
-            version = "3.24.2"
+            version = "3.28.0-rc4"
         },
         ["commonlibsse-ng#6cab6700"] = {
             repo = {

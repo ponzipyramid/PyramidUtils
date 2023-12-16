@@ -1,5 +1,9 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
+#include "Papyrus.h"
+#include "Serialize.h"
+
+using namespace PyramidUtils;
 
 void InitLogging()
 {
@@ -31,6 +35,15 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 	logs::info("{} v{} is loading...", plugin->GetName(), plugin->GetVersion());
 
 	SKSE::Init(a_skse);
+
+	const auto papyrus = SKSE::GetPapyrusInterface();
+	papyrus->Register(Papyrus::RegisterFunctions);
+
+	const auto serialization = SKSE::GetSerializationInterface();
+	serialization->SetUniqueID('puti');
+	serialization->SetSaveCallback(Serialize::Save);
+	serialization->SetLoadCallback(Serialize::Load);
+	serialization->SetRevertCallback(Serialize::Revert);
 
 	logs::info("{} loaded.", plugin->GetName());
 

@@ -1,6 +1,6 @@
-# CommonLibSSE-NG Plugin Template
+# Pyramid Utils
 
-This is a basic plugin template using CommonLibSSE-NG.
+General utilities for Papyrus. 
 
 ### Requirements
 * [XMake](https://xmake.io) [2.7.8+]
@@ -43,6 +43,3 @@ If you want to upgrade the project's dependencies, run the following commands:
 xmake repo --update
 xmake require --upgrade
 ```
-
-## Documentation
-Please refer to the [Wiki](../../wiki/Home) for more advanced topics.
