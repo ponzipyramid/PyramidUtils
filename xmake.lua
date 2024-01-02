@@ -35,8 +35,8 @@ target("PyramidUtils")
     -- add commonlibsse-ng plugin
     add_rules("@commonlibsse-ng/plugin", {
         name = "pyramid-utils",
-        author = "Qudix",
-        description = "SKSE64 plugin template using CommonLibSSE-NG"
+        author = "ponzipyramid",
+        description = "Simple Papyrus utils"
     })
 
     -- add src files
@@ -45,21 +45,9 @@ target("PyramidUtils")
     add_includedirs("src")
     set_pcxxheader("src/pch.h")
 
-    -- copy build files to MODS or SKYRIM paths (remove if not needed)
     after_build(function(target)
-        local copy = function(env, ext)
-            for _, env in pairs(env:split(";")) do
-                if os.exists(env) then
-                    local plugins = path.join(env, ext, "SKSE/Plugins")
-                    os.mkdir(plugins)
-                    os.trycp(target:targetfile(), plugins)
-                    os.trycp(target:symbolfile(), plugins)
-                end
-            end
-        end
-        if os.getenv("SKYRIM_MODS_PATH") then
-            copy(os.getenv("SKYRIM_MODS_PATH"), target:name())
-        elseif os.getenv("SKYRIM_PATH") then
-            copy(os.getenv("SKYRIM_PATH"), "Data")
-        end
+        local plugins = path.join("dist", "SKSE/Plugins")
+        os.mkdir(plugins)
+        os.trycp(target:targetfile(), plugins)
+        os.trycp(target:symbolfile(), plugins)
     end)
