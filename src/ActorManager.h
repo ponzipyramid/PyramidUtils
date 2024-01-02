@@ -14,6 +14,8 @@ namespace PyramidUtils {
             inline static bool IsCalmed(RE::Actor* a_actor) { return calmed_actors.contains(a_actor->GetFormID()); }
 
             inline static void Serialize(SKSE::SerializationInterface* a_intfc) {
+                SKSE::log::info("serializing");
+               
                 auto num_actors = calmed_actors.size();
                 a_intfc->WriteRecordData(&num_actors, sizeof(num_actors));
                 for (auto& form_id : calmed_actors) {
@@ -22,6 +24,8 @@ namespace PyramidUtils {
             }
 
             inline static void Deserialize(SKSE::SerializationInterface* a_intfc) {
+                SKSE::log::info("deserializing");
+
                 std::size_t num_actors;
                 a_intfc->ReadRecordData(&num_actors, sizeof(num_actors));
 

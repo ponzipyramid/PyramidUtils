@@ -2,6 +2,7 @@
 #include <spdlog/sinks/msvc_sink.h>
 #include "Papyrus.h"
 #include "Serialize.h"
+#include "Hooks.h"
 
 using namespace PyramidUtils;
 
@@ -36,6 +37,8 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 
 	SKSE::Init(a_skse);
 
+	Hooks::Install();
+
 	const auto papyrus = SKSE::GetPapyrusInterface();
 	papyrus->Register(Papyrus::RegisterFunctions);
 
@@ -46,6 +49,7 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 	serialization->SetRevertCallback(Serialize::Revert);
 
 	logs::info("{} loaded.", plugin->GetName());
+
 
 	return true;
 }

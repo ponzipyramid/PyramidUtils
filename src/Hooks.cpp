@@ -4,7 +4,7 @@
 using namespace PyramidUtils;
 
 void Hooks::Install() {
-    SKSE::AllocTrampoline(static_cast<size_t>(1) << 2);
+    SKSE::AllocTrampoline(static_cast<size_t>(1) << 7);
     auto& trampoline = SKSE::GetTrampoline();
 
     REL::Relocation<std::uintptr_t> det{ REL::RelocationID(41659, 42742), REL::VariantOffset(0x526, 0x67B, 0x67B) };
