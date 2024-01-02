@@ -8,4 +8,4 @@ Actor[] Function GetActorsDetectedBy(Actor akActor, Actor[] akSeenBy) global nat
 
 Form[] Function GetItemsByKeyword(ObjectReference akContainer, Keyword[] akKeywords, bool abMatchAll = false) global native
 
-Function RemoveItemsByKeyword(ObjectReference akFromCont, ObjectReference akToCont, Keyword[] akKeywords, bool abMatchAll = false) global native
+Int Function RemoveItemsByKeyword(ObjectReference akFromCont, Keyword[] akKeywords, bool abMatchAll = false, ObjectReference akToCont = none) global native
