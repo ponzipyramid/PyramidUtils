@@ -43,3 +43,6 @@ If you want to upgrade the project's dependencies, run the following commands:
 xmake repo --update
 xmake require --upgrade
 ```
+
+### Credit
+- Scrab for the detect hook
