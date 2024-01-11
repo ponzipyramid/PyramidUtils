@@ -9,3 +9,7 @@ vs*/
 
 # files
 *.zip
+
+*.dll
+*.pdb
+*.pex

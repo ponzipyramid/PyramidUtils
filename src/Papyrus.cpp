@@ -26,7 +26,7 @@ namespace {
         return detected_by;
     }
 
-    std::vector<RE::TESForm*> GetItemsByKeyword(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, std::vector<RE::BGSKeyword*> a_keywords, bool a_matchall) {
+    std::vector<RE::TESForm*> GetItemsByKeyword(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, std::vector<RE::BGSKeyword*> a_keywords, std::vector<RE::BGSKeyword*> a_exclude, bool a_matchall) {
         std::vector<RE::TESForm*> forms;
 
         if (!a_container) {
@@ -38,7 +38,7 @@ namespace {
             if (!form->GetPlayable() || form->GetName()[0] == '\0') continue;
             if (data.second->IsQuestObject()) continue;
             
-            if (form->HasKeywordInArray(a_keywords, a_matchall)) {
+            if (form->HasKeywordInArray(a_keywords, a_matchall) && !form->HasKeywordInArray(a_exclude, a_matchall)) {
                 forms.push_back(form);
             }
         }
@@ -46,7 +46,7 @@ namespace {
         return forms; 
     }
 
-    int RemoveItemsByKeyword(RE::StaticFunctionTag*, RE::TESObjectREFR* a_fromContainer, std::vector<RE::BGSKeyword*> a_keywords, bool a_matchall, RE::TESObjectREFR* a_toContainer) {
+    int RemoveItemsByKeyword(RE::StaticFunctionTag*, RE::TESObjectREFR* a_fromContainer, std::vector<RE::BGSKeyword*> a_keywords, std::vector<RE::BGSKeyword*> a_exclude, bool a_matchall, RE::TESObjectREFR* a_toContainer) {
         int totalRemoved = 0;
         
         if (!a_fromContainer) {
@@ -62,9 +62,8 @@ namespace {
             if (!form->GetPlayable() || form->GetName()[0] == '\0') continue;
             if (data.second->IsQuestObject()) continue;
             
-            if (form->HasKeywordInArray(a_keywords, a_matchall)) {
+            if (form->HasKeywordInArray(a_keywords, a_matchall) && !form->HasKeywordInArray(a_exclude, a_matchall)) {             
                 auto count = counts[form];
-
                 a_fromContainer->RemoveItem(form, count, removeReason, nullptr, a_toContainer);
                 totalRemoved += count;
             }
