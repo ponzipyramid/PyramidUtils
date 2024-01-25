@@ -4,7 +4,7 @@
 using namespace PyramidUtils;
 
 void Hooks::Install() {
-    SKSE::AllocTrampoline(static_cast<size_t>(1) << 7);
+    SKSE::AllocTrampoline(28);
     auto& trampoline = SKSE::GetTrampoline();
 
     REL::Relocation<std::uintptr_t> det{ REL::RelocationID(41659, 42742), REL::VariantOffset(0x526, 0x67B, 0x67B) };
@@ -12,6 +12,9 @@ void Hooks::Install() {
 
     REL::Relocation<std::uintptr_t> upc{ RE::Character::VTABLE[0] };
     _UpdateCombat = upc.write_vfunc(0x0E4, UpdateCombat);
+
+    REL::Relocation<std::uintptr_t> amd{ REL::RelocationID(36359, 37350), REL::VariantOffset(0xF0, 0xFB, 0xFB) };
+    _ApplyMovementDelta = trampoline.write_call<5>(amd.address(), ApplyMovementDelta);
 }
 
 void Hooks::UpdateCombat(RE::Character* a_this) {
@@ -19,6 +22,12 @@ void Hooks::UpdateCombat(RE::Character* a_this) {
         _UpdateCombat(a_this);
     } else if (a_this->IsInCombat()) {
         a_this->StopCombat();
+    }
+}
+
+void Hooks::ApplyMovementDelta(RE::Actor* a_actor, float a_delta) {
+    if (!ActorManager::IsCollisionFrozen(a_actor)) {
+        _ApplyMovementDelta(a_actor, a_delta);
     }
 }
 

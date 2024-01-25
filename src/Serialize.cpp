@@ -19,6 +19,7 @@ void Serialize::Load(SKSE::SerializationInterface* a_intfc) {
     while (a_intfc->GetNextRecordInfo(type, version, length)) {
         if (type == UtilRecord) {
             ActorManager::Deserialize(a_intfc);
+            break;
         }
     }
 }

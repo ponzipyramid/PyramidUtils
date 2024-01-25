@@ -3,29 +3,66 @@
 namespace PyramidUtils {
     class ActorManager {
         public:
-            inline static void CalmActor(RE::Actor* a_actor) {
-                calmed_actors.insert(a_actor->GetFormID());
+            inline static void SetActorCalmed(RE::Actor* a_actor, bool a_calmed) {
+                if (a_calmed) {
+                    calmed.insert(a_actor->GetFormID());
+                } else {
+                    calmed.erase(a_actor->GetFormID());
+                }
             }
 
-            inline static void ClearActor(RE::Actor* a_actor) {
-                calmed_actors.erase(a_actor->GetFormID());
+            inline static void SetActorFrozen(RE::Actor* a_actor, bool a_enabled) {
+                a_actor->SetCollision(a_enabled);
+
+                if (a_enabled) {
+                   
+                    SKSE::log::info("Adding {} to no collision list", a_actor->GetFormID());
+                    disabledCollision.insert(a_actor->GetFormID());
+                }
+                else {
+                    SKSE::log::info("Removing {} from no collision list", a_actor->GetFormID());
+                    disabledCollision.erase(a_actor->GetFormID());
+                }
             }
 
-            inline static bool IsCalmed(RE::Actor* a_actor) { return calmed_actors.contains(a_actor->GetFormID()); }
+            inline static bool IsCalmed(RE::Actor* a_actor) { return a_actor && calmed.contains(a_actor->GetFormID()); }
+
+            inline static bool IsCollisionFrozen(RE::Actor* a_actor) { return a_actor && disabledCollision.contains(a_actor->GetFormID()); }
 
             inline static void Serialize(SKSE::SerializationInterface* a_intfc) {
-                SKSE::log::info("serializing");
-               
-                auto num_actors = calmed_actors.size();
-                a_intfc->WriteRecordData(&num_actors, sizeof(num_actors));
-                for (auto& form_id : calmed_actors) {
-                    a_intfc->WriteRecordData(&form_id, sizeof(form_id));
-                } 
+                SKSE::log::info("serializing actor manager - START");
+                SerializeActorList(a_intfc, calmed);
+                SKSE::log::info("serialized {} calmed actors(s)", calmed.size());
+                SerializeActorList(a_intfc, disabledCollision);
+                SKSE::log::info("serialized {} frozen actor(s)", disabledCollision.size());
+                SKSE::log::info("serializing actor manager - END");
             }
 
             inline static void Deserialize(SKSE::SerializationInterface* a_intfc) {
-                SKSE::log::info("deserializing");
+                SKSE::log::info("deserializing actor manager - START");
+                DeserializeActorList(a_intfc, calmed);
+                SKSE::log::info("deserialized {} calmed actors(s)", calmed.size());
+                DeserializeActorList(a_intfc, disabledCollision);
+                SKSE::log::info("deserialized {} frozen actors(s)", disabledCollision.size());
+                SKSE::log::info("deserializing actor manager - END");
+            }
 
+            inline static void Revert(SKSE::SerializationInterface*) {
+                SKSE::log::info("reverting actor manager - START");
+                calmed.clear();
+                disabledCollision.clear();
+                SKSE::log::info("reverting actor manager - END");
+            }
+        private:
+            static inline void SerializeActorList(SKSE::SerializationInterface* a_intfc, std::unordered_set<RE::FormID>& a_list) {
+                auto num_actors = a_list.size();
+                a_intfc->WriteRecordData(&num_actors, sizeof(num_actors));
+                for (auto& form_id : a_list) {
+                    a_intfc->WriteRecordData(&form_id, sizeof(form_id));
+                }
+            }
+
+            static inline void DeserializeActorList(SKSE::SerializationInterface* a_intfc, std::unordered_set<RE::FormID>& a_list) {
                 std::size_t num_actors;
                 a_intfc->ReadRecordData(&num_actors, sizeof(num_actors));
 
@@ -34,16 +71,13 @@ namespace PyramidUtils {
                     a_intfc->ReadRecordData(&form_id, sizeof(form_id));
                     if (auto victim = RE::TESForm::LookupByID<RE::Actor>(form_id)) {
 						if (auto ref = victim->GetObjectReference()) {
-                            calmed_actors.insert(form_id);
+                            a_list.insert(form_id);
                         }
                     }
                 }
             }
 
-            inline static void Revert(SKSE::SerializationInterface*) {
-                calmed_actors.clear();
-            }
-        private:
-            static inline std::unordered_set<RE::FormID> calmed_actors;
+            static inline std::unordered_set<RE::FormID> calmed;
+            static inline std::unordered_set<RE::FormID> disabledCollision;
     };
 }
