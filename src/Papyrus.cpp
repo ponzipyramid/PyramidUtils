@@ -68,6 +68,19 @@ namespace {
         return forms;
     }
 
+    std::vector<RE::TESForm*> FilterFormsByGoldValue(RE::StaticFunctionTag*, std::vector<RE::TESForm*> a_forms, int a_value, bool a_greater, bool a_equal) {
+        SKSE::log::info("FilterFormsByGoldValue");
+        std::vector<RE::TESForm*> forms;
+
+        for (const auto& form : a_forms) {            
+            if ((a_greater && form->GetGoldValue() > a_value) || (!a_greater && form->GetGoldValue() < a_value) || (a_equal && form->GetGoldValue() == a_value)) {
+                forms.push_back(form);
+            }
+        }
+
+        return forms;
+    }
+
     std::vector<RE::TESForm*> FilterByEnchanted(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, std::vector<RE::TESForm*> a_forms, bool a_ench) {
         SKSE::log::info("FilterByEnchanted");
         std::vector<RE::TESForm*> forms;
@@ -159,6 +172,7 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
 
     vm->RegisterFunction("GetItemsByKeyword", PapyrusClass, GetItemsByKeyword);
     vm->RegisterFunction("FilterFormsByKeyword", PapyrusClass, FilterFormsByKeyword);
+    vm->RegisterFunction("FilterFormsByGoldValue", PapyrusClass, FilterFormsByGoldValue);
     vm->RegisterFunction("FilterByEnchanted", PapyrusClass, FilterByEnchanted);
     vm->RegisterFunction("RemoveForms", PapyrusClass, RemoveForms);
 
