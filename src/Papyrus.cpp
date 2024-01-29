@@ -7,6 +7,20 @@ using namespace PyramidUtils;
 namespace {
     constexpr std::string_view PapyrusClass = "PyramidUtils";
 
+    bool HasKeywords(RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_matchAll) {
+        if (a_matchAll) {
+            for (auto kwd : a_kwds) {
+                if (!a_form->HasKeywordInArray(std::vector<RE::BGSKeyword*> { kwd }, false)) {
+                    return false;
+                }   
+            }
+            return true;
+        } else {
+            return a_form->HasKeywordInArray(a_kwds, false);
+        }
+
+    }
+
     void SetActorCalmed(RE::StaticFunctionTag*, RE::Actor* a_actor, bool a_calmed) {
         SKSE::log::info("SetActorCalmed");
         ActorManager::SetActorCalmed(a_actor, a_calmed);
@@ -37,68 +51,71 @@ namespace {
 
     std::vector<RE::TESForm*> GetItemsByKeyword(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, std::vector<RE::BGSKeyword*> a_keywords, bool a_matchall) {
         SKSE::log::info("GetItemsByKeyword");
-        std::vector<RE::TESForm*> forms;
+        std::vector<RE::TESForm*> filtered;
 
         if (!a_container) {
-            return forms;
+            return filtered;
         }
 
         auto inventory = a_container->GetInventory();
         for (const auto& [form, data] : inventory) {
             if (!form->GetPlayable() || form->GetName()[0] == '\0') continue;
             
-            if (a_keywords.empty() || form->HasKeywordInArray(a_keywords, a_matchall)) {
-                forms.push_back(form);
+            if (a_keywords.empty() || HasKeywords(form, a_keywords, a_matchall)) {
+                filtered.push_back(form);
             }
         }
 
-        return forms; 
+        return filtered; 
     }
 
     std::vector<RE::TESForm*> FilterFormsByKeyword(RE::StaticFunctionTag*, std::vector<RE::TESForm*> a_forms, std::vector<RE::BGSKeyword*> a_keywords, bool a_matchall, bool a_invert) {
         SKSE::log::info("FilterFormsByKeyword");
-        std::vector<RE::TESForm*> forms;
+        std::vector<RE::TESForm*> filtered;
 
-        for (const auto& form : a_forms) {            
-            if (a_keywords.empty() || form->HasKeywordInArray(a_keywords, a_matchall) != a_invert) {
-                forms.push_back(form);
+        for (const auto& form : a_forms) {
+            logs::info("Form: {} kwd = {}, invert = {}", form->GetName(), HasKeywords(form, a_keywords, a_matchall), a_invert);
+            if (HasKeywords(form, a_keywords, a_matchall) != a_invert) {
+                filtered.push_back(form);
             }
         }
 
-        return forms;
+        return filtered;
     }
 
     std::vector<RE::TESForm*> FilterFormsByGoldValue(RE::StaticFunctionTag*, std::vector<RE::TESForm*> a_forms, int a_value, bool a_greater, bool a_equal) {
         SKSE::log::info("FilterFormsByGoldValue");
-        std::vector<RE::TESForm*> forms;
+        std::vector<RE::TESForm*> filtered;
 
         for (const auto& form : a_forms) {            
             if ((a_greater && form->GetGoldValue() > a_value) || (!a_greater && form->GetGoldValue() < a_value) || (a_equal && form->GetGoldValue() == a_value)) {
-                forms.push_back(form);
+                filtered.push_back(form); 
             }
         }
 
-        return forms;
+        return filtered;
     }
 
     std::vector<RE::TESForm*> FilterByEnchanted(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, std::vector<RE::TESForm*> a_forms, bool a_ench) {
         SKSE::log::info("FilterByEnchanted");
-        std::vector<RE::TESForm*> forms;
+        std::vector<RE::TESForm*> filtered;
 
         if (!a_container) {
-            return forms;
+            return filtered;
         }
+
+        std::unordered_set<RE::TESForm*> forms(a_forms.begin(), a_forms.end());
 
         auto inventory = a_container->GetInventory();
         for (const auto& [form, data] : inventory) {
             if (!form->GetPlayable() || form->GetName()[0] == '\0') continue;
 
-            if ((data.second->GetEnchantment() != nullptr) == a_ench) {
-                forms.push_back(form);
+            if ((data.second->GetEnchantment() != nullptr) == a_ench && forms.contains(form)) {
+                filtered.push_back(form);
             }
         }
 
-        return forms; 
+        return filtered; 
     }
 
     long RemoveForms(RE::StaticFunctionTag*, RE::TESObjectREFR* a_fromContainer, std::vector<RE::TESForm*> a_forms, RE::TESObjectREFR* a_toContainer) {
@@ -115,6 +132,8 @@ namespace {
 
         auto inventory = a_fromContainer->GetInventory();
         auto counts = a_fromContainer->GetInventoryCounts();
+
+        auto noSale = std::vector<std::string>{ "VendorNoSale" };
 
         for (const auto& [form, data] : inventory) {
             if (!form->GetPlayable() || form->GetName()[0] == '\0') continue;
