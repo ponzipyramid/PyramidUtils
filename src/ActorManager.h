@@ -15,12 +15,9 @@ namespace PyramidUtils {
                 a_actor->SetCollision(a_enabled);
 
                 if (a_enabled) {
-                   
-                    SKSE::log::info("Adding {} to no collision list", a_actor->GetFormID());
                     disabledCollision.insert(a_actor->GetFormID());
                 }
                 else {
-                    SKSE::log::info("Removing {} from no collision list", a_actor->GetFormID());
                     disabledCollision.erase(a_actor->GetFormID());
                 }
             }
