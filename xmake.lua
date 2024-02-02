@@ -2,7 +2,7 @@
 set_xmakever("2.7.8")
 
 -- set project
-set_project("pyramid-utils")
+set_project("PyramidUtils")
 set_version("0.0.0")
 set_license("MIT")
 set_languages("c++20")
@@ -34,7 +34,7 @@ target("PyramidUtils")
 
     -- add commonlibsse-ng plugin
     add_rules("@commonlibsse-ng/plugin", {
-        name = "pyramid-utils",
+        name = "PyramidUtils",
         author = "ponzipyramid",
         description = "Simple Papyrus utils"
     })
