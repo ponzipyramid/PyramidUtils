@@ -133,8 +133,6 @@ namespace {
         auto inventory = a_fromContainer->GetInventory();
         auto counts = a_fromContainer->GetInventoryCounts();
 
-        auto noSale = std::vector<std::string>{ "VendorNoSale" };
-
         for (const auto& [form, data] : inventory) {
             if (!form->GetPlayable() || form->GetName()[0] == '\0') continue;
             if (data.second->IsQuestObject()) continue;
