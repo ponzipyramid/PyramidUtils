@@ -149,23 +149,15 @@ namespace {
         return totalRemoved;
     }
 
-    
-
     RE::Actor* GetPlayerSpeechTarget(RE::StaticFunctionTag*) {
         SKSE::log::info("GetPlayerSpeechTarget");
-        const auto processLists = RE::ProcessLists::GetSingleton();
-        for (const auto& actorHandle : processLists->highActorHandles) {
-            const auto actorPtr = actorHandle.get();
-            if (const auto actor = actorPtr.get()) {
-                if (auto targetHandle = actor->GetActorRuntimeData().dialogueItemTarget) {
-                    if (auto targetPtr = targetHandle.get()) {
-                        if (targetPtr.get() == RE::PlayerCharacter::GetSingleton()) {
-                            return actor;
-                        }
-                    }
+        
+        if (auto speakerObjPtr = RE::MenuTopicManager::GetSingleton()->speaker) {
+            if (auto speakerPtr = speakerObjPtr.get()) {
+                if (auto speaker = speakerPtr.get()) {
+                    return speaker->As<RE::Actor>();
                 }
             }
-           
         }
 
         return nullptr;
