@@ -1,7 +1,7 @@
 Scriptname PyramidUtils Hidden 
 
 Float Function GetVersion() global
-    return 0.2
+    return 0.002002
 EndFunction
 
 ; Actor
