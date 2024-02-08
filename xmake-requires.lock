@@ -9,12 +9,12 @@
                 commit = "2a40e4b0e57fa3231195238ed984000a8100aa70",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
-            version = "3.28.0-rc4"
+            version = "3.28.3"
         },
         ["commonlibsse-ng#6cab6700"] = {
             repo = {
                 branch = "master",
-                commit = "2a40e4b0e57fa3231195238ed984000a8100aa70",
+                commit = "01bc97320575fb77e9936fff184c6d3cb58e8c90",
                 url = "https://github.com/xmake-io/xmake-repo.git"
             },
             version = "v3.7.0"

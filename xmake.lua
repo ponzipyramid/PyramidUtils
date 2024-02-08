@@ -7,7 +7,6 @@ set_version("0.0.0")
 set_license("MIT")
 set_languages("c++20")
 set_optimize("faster")
-set_warnings("allextra", "error")
 
 -- set allowed
 set_allowedarchs("windows|x64")
