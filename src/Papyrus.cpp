@@ -1,6 +1,7 @@
 #include "Papyrus.h"
 #include "ActorManager.h"
 #include "Input.h"
+#include "Expression.h"
 
 using namespace PyramidUtils;
 
@@ -172,22 +173,40 @@ namespace {
         return a_str;
     }
 
+    bool SetPhonemeModifierSmooth(RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value) {
+		return Expression::SetPhonemeModifierSmooth(a_actor, a_mode, a_id1, a_id2, a_value);
+	}
+
+    int SmoothSetExpression(RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength = 0, float a_modifier = 1.0, float a_speed = 2.0) {
+        return Expression::SmoothSetExpression(a_actor, a_mood, a_strength, a_currentStrength, a_modifier, a_speed);
+    }
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
+    // actors
     vm->RegisterFunction("SetActorCalmed", PapyrusClass, SetActorCalmed);
     vm->RegisterFunction("SetActorFrozen", PapyrusClass, SetActorFrozen);
     vm->RegisterFunction("GetDetectedBy", PapyrusClass, GetDetectedBy);
 
+    // inv processing
     vm->RegisterFunction("GetItemsByKeyword", PapyrusClass, GetItemsByKeyword);
     vm->RegisterFunction("FilterFormsByKeyword", PapyrusClass, FilterFormsByKeyword);
     vm->RegisterFunction("FilterFormsByGoldValue", PapyrusClass, FilterFormsByGoldValue);
     vm->RegisterFunction("FilterByEnchanted", PapyrusClass, FilterByEnchanted);
     vm->RegisterFunction("RemoveForms", PapyrusClass, RemoveForms);
 
+    // player
     vm->RegisterFunction("GetPlayerSpeechTarget", PapyrusClass, GetPlayerSpeechTarget);
+    
+    // input
     vm->RegisterFunction("GetButtonForDXScanCode", PapyrusClass, GetButtonForDXScanCode);
+    
+    // strings
     vm->RegisterFunction("ReplaceAt", PapyrusClass, ReplaceAt);
+
+    // expressions
+    vm->RegisterFunction("SetPhonemeModifierSmooth", PapyrusClass, SetPhonemeModifierSmooth);
+    vm->RegisterFunction("SmoothSetExpression", PapyrusClass, SmoothSetExpression);
 
     return true;
 }
