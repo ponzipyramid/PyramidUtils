@@ -12,6 +12,126 @@ namespace PyramidUtils::Expression {
 		ExpressionId
 	};
 
+	int GetExpressionId(RE::Actor* a_actor)
+	{
+		logs::info("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE")
+
+		if (a_actor == nullptr) return 7;
+
+		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
+
+		if (animData == nullptr) return 7;
+
+		const size_t count_exp = animData->expressionKeyFrame.count;
+		for (int i = 0; i < count_exp; i++)
+		{
+			if (animData->expressionKeyFrame.values[i] != 0.0f)
+			{
+				return i
+			}
+		}
+		//neutral mood
+		return 7;
+	
+	}
+
+	int GetExpressionValue(RE::Actor* a_actor)
+	{
+		logs::info("GetExpressionIValue({}) called", a_actor ? a_actor->GetName() : "NONE")
+		
+		if (a_actor == nullptr) return 0;
+
+		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
+
+		if (animData == nullptr) return 0;
+
+		const size_t count_exp = animData->expressionKeyFrame.count;
+		for (int i = 0; i < count_exp; i++)
+		{
+			if (animData->expressionKeyFrame.values[i] != 0.0f)
+			{
+				return static_cast<int>(animData->expressionKeyFrame.values[i])
+			}
+		}
+
+		//neutral value
+		return 0;
+	}
+
+	int GetPhonemeValue(RE::Actor* a_actor, int phonemeId)
+	{
+		logs::info("GetPhonemeValue({}) called", a_actor ? a_actor->GetName() : "NONE")
+
+		if (a_actor == nullptr) return 0;
+
+		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
+
+		if (animData == nullptr) return 0;
+		if (phonemeId < 0 && phonemeId > 15) return 0;
+
+		return static_cast<int>(animData->phenomeKeyFrame.values[phonemeId]);
+		
+	}
+
+	int GetModifierValue(RE::Actor* a_actor, int modifierId)
+	{
+		logs::info("GetModifierValue({}) called", a_actor ? a_actor->GetName() : "NONE")
+
+			if (a_actor == nullptr) return 0;
+
+		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
+
+		if (animData == nullptr) return 0;
+		if (modifierId < 0 && modifierId>13) return 0;
+
+		for (int i = 0; i < 14; i++) loc_res.push_back(loc_expdata->modifierKeyFrame.values[i]);
+
+		return static_cast<int>(animData->modifierKeyFrame.values[phonemeId]);
+	}
+
+	void SmoothResetMFG(RE::Actor* a_actor, float a_speed, int aiDelay) {
+		auto animData = a_actor->GetFaceGenAnimationData();
+
+		if (!animData) {
+			return false;
+		}
+
+		SKSE::GetTaskInterface()->AddTask([=] {
+
+			
+			RE::BSSpinLockGuard locker(animData->lock);
+
+			// Blinks
+			Expression::SmoothSetModifier(animData, 0, 1, 0, a_speed, aiDelay)
+				// Brows
+				Expression::SmoothSetModifier(animData, 2, 3, 0, a_speed, aiDelay)
+				Expression::SmoothSetModifier(animData, 4, 5, 0, a_speed, aiDelay)
+				Expression::SmoothSetModifier(animData, 6, 7, 0, a_speed, aiDelay)
+
+				// Eyes
+
+				Expression::SmoothSetModifier(animData, 8, -1, 0, a_speed, aiDelay)
+				Expression::SmoothSetModifier(animData, 9, -1, 0, a_speed, aiDelay)
+				Expression::SmoothSetModifier(animData, 10, -1, 0, a_speed, aiDelay)
+				Expression::SmoothSetModifier(animData, 11, -1, 0, a_speed, aiDelay)
+
+				// Squints
+				Expression::SmoothSetModifier(animData, 12, 13, 0, a_speed, aiDelay)
+				// Mouth
+				int p = 0;
+			while (p <= 15) {
+				Expression::SmoothSetPhoneme(animData, p, 0, a_speed, aiDelay)
+					p = p + 1;
+			}
+
+			// Expressions
+			Expression::SmoothSetExpression(a_actor, Expression::GetExpressionId(a_actor), 0, Expression::GetExpressionValue(a_actor), 1, a_speed, aiDelay)
+
+			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
+			});
+	}
+
+
     void SmoothSetPhoneme(RE::BSFaceGenAnimationData* animData, int a_id, int a_value, float a_speed, int a_delay)
 	{
 		int t1 = animData->phenomeKeyFrame.count ? static_cast<int>(std::lround(animData->phenomeKeyFrame.values[a_id] * 100.0f)) : 0;
@@ -37,7 +157,7 @@ namespace PyramidUtils::Expression {
 		return min + rand() % (max - min + 1);
 	}
 
-	void SmoothSetModifier(RE::BSFaceGenAnimationData* animData, int mod1, int mod2, int str_dest, int a_delay)
+	void SmoothSetModifier(RE::BSFaceGenAnimationData* animData, int mod1, int mod2, int str_dest, float a_speed, int a_delay)
 	{
 		int speed_blink_min = 25; 
 		int speed_blink_max = 60;
@@ -69,7 +189,7 @@ namespace PyramidUtils::Expression {
 			speed = randomInt(speed_eye_move_min, speed_eye_move_max);
 		}
 		else {
-			speed = 5;
+			speed = a_speed;
 		}
 
 		while (t1 != str_dest) {
@@ -123,7 +243,7 @@ namespace PyramidUtils::Expression {
 						Expression::SmoothSetPhoneme(animData, a_id1, a_value, a_speed, a_time);
 					}
 					case Expression::Mode::Modifier: {
-						Expression::SmoothSetModifier(animData, a_id1, a_id2, a_value, a_time);
+						Expression::SmoothSetModifier(animData, a_id1, a_id2, a_value, a_speed, a_time);
 					}
 					default: {
 						result = false;
@@ -144,37 +264,35 @@ namespace PyramidUtils::Expression {
 		return true;
 	}
 
-	int SmoothSetExpression(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay, RE::VMStackID a_stackId) {
-       
+	bool SmoothSetExpression(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay, RE::VMStackID a_stackId) {
+
 		auto animData = a_actor->GetFaceGenAnimationData();
 
 		if (!animData) {
 			return false;
 		}
 
-		SKSE::GetTaskInterface()->AddTask([=]{
+		SKSE::GetTaskInterface()->AddTask([=] {
 
-        	int strength = static_cast<int>(a_strength * a_modifier);
-
+			int exp_dest = static_cast<int>(a_strength * a_modifier);
+			int exp_value = a_currentStrength;
 			logs::info("SmoothSetExpression: entering loop");
-
+			RE::BSSpinLockGuard locker(animData->lock);
 			int i = 1000;
-			while (a_currentStrength != a_strength) {
+			while (exp_value != exp_dest) {
 				if (i != 1000)
-					std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
-				
-				RE::BSSpinLockGuard locker(animData->lock);
-				int t2 = (a_strength - a_currentStrength) / std::abs(a_strength - a_currentStrength);
+					std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
+				int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
 
-				strength = a_currentStrength + t2 * a_speed;
+				exp_value = exp_value + t2 * a_speed;
 
-				if ((a_strength - a_currentStrength) / t2 < 0) {
-					strength = a_strength;
+				if ((exp_dest - exp_value) / t2 < 0) {
+					exp_value = exp_dest;
 				}
 
-				animData->SetExpressionOverride(a_mood, strength);
+				animData->SetExpressionOverride(a_mood, exp_value);
 				i -= 1;
-				
+
 				logs::info("iters left {}", i);
 				if (i <= 0)
 					break;
@@ -182,9 +300,9 @@ namespace PyramidUtils::Expression {
 
 			logs::info("SmoothSetExpression: exiting loop");
 
-			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<int>(a_stackId, true);
-		});
+			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
+			});
 
-        return true;
-    }
+		return true;
+	}
 }

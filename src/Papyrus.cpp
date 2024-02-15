@@ -207,6 +207,10 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     // expressions
     vm->RegisterLatentFunction<bool>("SetPhonemeModifierSmooth", PapyrusClass, SetPhonemeModifierSmooth);
     vm->RegisterLatentFunction<bool>("SmoothSetExpression", PapyrusClass, SmoothSetExpression);
-
+    vm->RegisterLatentFunction<bool>("SmoothResetMFG", PapyrusClass, SmoothResetMFG);
+    vm->RegisterFunction("GetExpressionId", PapyrusClass, GetExpressionId);
+    vm->RegisterFunction("GetExpressionValue", PapyrusClass, GetExpressionValue);
+    vm->RegisterFunction("GetPhonemeValue", PapyrusClass, GetPhonemeValue);
+    vm->RegisterFunction("GetModifierValue", PapyrusClass, GetModifierValue);
     return true;
 }

@@ -52,7 +52,15 @@ Function RegisterForAllAlphaNumericKeys(Form akForm) global
     endWhile
 EndFunction
 
-; Expressions
-Bool Function SetPhonemeModifierSmooth(Actor akActor, int aiMode, int aiId1, int aiId2, int aiValue) global native
-Int Function SmoothSetExpression(Actor akActor, int aiMood, int aiStrength, int aiCurrentStrength = 0, float aiModifier = 1.0, float aiSpeed = 2.0) global native
+bool function SetPhonemeModifierSmooth(Actor akActor, int aiMode, int aId1, int aiId2, int aiValue, float afSpeed, int aiDelay) global native
+bool function SmoothSetExpression(Actor akActor, int aiMood, int aiStrength, int aiCurrentStrength, float afModifier, float afSpeed, int aiDelay) global native
+bool function SmoothResetMFG(Actor akActor, float afSpeed, int aiDelay) global native
 
+; get phoneme/modifier/expression
+int function GetPhonemeValue(Actor act, int id) global native
+int function GetModifierValue(Actor act, int id) global native
+
+; return expression value which is enabled. (enabled only one at a time.)
+int function GetExpressionValue(Actor act) global native
+; return expression ID which is enabled.
+int function GetExpressionId(Actor act) global native
