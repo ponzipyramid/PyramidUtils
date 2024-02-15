@@ -173,12 +173,12 @@ namespace {
         return a_str;
     }
 
-    bool SetPhonemeModifierSmooth(RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value) {
-		return Expression::SetPhonemeModifierSmooth(a_actor, a_mode, a_id1, a_id2, a_value);
+    RE::BSScript::LatentStatus SetPhonemeModifierSmooth(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value, float a_speed, int a_delay) {
+        return Expression::SetPhonemeModifierSmooth(a_actor, a_mode, a_id1, a_id2, a_value, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
 	}
 
-    int SmoothSetExpression(RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength = 0, float a_modifier = 1.0, float a_speed = 2.0) {
-        return Expression::SmoothSetExpression(a_actor, a_mood, a_strength, a_currentStrength, a_modifier, a_speed);
+    RE::BSScript::LatentStatus SmoothSetExpression(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay) {
+        return Expression::SmoothSetExpression(a_actor, a_mood, a_strength, a_currentStrength, a_modifier, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
     }
 }
 
@@ -205,8 +205,8 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("ReplaceAt", PapyrusClass, ReplaceAt);
 
     // expressions
-    vm->RegisterFunction("SetPhonemeModifierSmooth", PapyrusClass, SetPhonemeModifierSmooth);
-    vm->RegisterFunction("SmoothSetExpression", PapyrusClass, SmoothSetExpression);
+    vm->RegisterLatentFunction<bool>("SetPhonemeModifierSmooth", PapyrusClass, SetPhonemeModifierSmooth);
+    vm->RegisterLatentFunction<bool>("SmoothSetExpression", PapyrusClass, SmoothSetExpression);
 
     return true;
 }

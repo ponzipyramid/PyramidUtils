@@ -1,7 +1,9 @@
 #pragma once
+#include <chrono>
+#include <thread>
 
 namespace PyramidUtils::Expression {
-	enum Mode : std::int32_t
+	enum Mode : int
 	{
 		Reset = -1,
 		Phoneme,
@@ -10,15 +12,14 @@ namespace PyramidUtils::Expression {
 		ExpressionId
 	};
 
-    void SmoothSetPhoneme(RE::BSFaceGenAnimationData* animData, int a_id, int a_value)
+    void SmoothSetPhoneme(RE::BSFaceGenAnimationData* animData, int a_id, int a_value, float a_speed, int a_delay)
 	{
 		int t1 = animData->phenomeKeyFrame.count ? static_cast<int>(std::lround(animData->phenomeKeyFrame.values[a_id] * 100.0f)) : 0;
 		int t2 = 0;
-		const int speed = 5;
 
 		while (t1 != a_value) {
 			t2 = (a_value - t1) / std::abs(a_value - t1);
-			t1 += t2 * speed;
+			t1 += t2 * a_speed;
 
 			if ((a_value - t1) / t2 < 0)
 			{
@@ -26,6 +27,8 @@ namespace PyramidUtils::Expression {
 			}
 
 			animData->phenomeKeyFrame.SetValue(a_id, std::clamp(a_value, 0, 100) / 100.0f);
+
+			std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
 		}
 	}
 
@@ -34,7 +37,7 @@ namespace PyramidUtils::Expression {
 		return min + rand() % (max - min + 1);
 	}
 
-	void SmoothSetModifier(RE::BSFaceGenAnimationData* animData, int mod1, int mod2, int str_dest)
+	void SmoothSetModifier(RE::BSFaceGenAnimationData* animData, int mod1, int mod2, int str_dest, int a_delay)
 	{
 		int speed_blink_min = 25; 
 		int speed_blink_max = 60;
@@ -86,67 +89,102 @@ namespace PyramidUtils::Expression {
 			else {
 				animData->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
 			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
 		}
 	}
 
-	bool SetPhonemeModifierSmooth(RE::Actor* a_actor, std::int32_t a_mode, std::uint32_t a_id1, std::uint32_t a_id2, std::int32_t a_value)
+	bool SetPhonemeModifierSmooth(RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value, int a_speed, int a_time, RE::VMStackID a_stackId)
 	{
 		if (!a_actor) {
 			return false;
 		}
 
-		auto animData = a_actor->GetFaceGenAnimationData();
-
-		if (!animData) {
+		if (!a_actor->GetFaceGenAnimationData()) {
 			return false;
 		}
 
-		RE::BSSpinLockGuard locker(animData->lock);
+		SKSE::GetTaskInterface()->AddTask([=]{
+			bool result = true;
 
-		std::srand(static_cast<unsigned int>(std::time(nullptr)));
+			if (auto animData = a_actor->GetFaceGenAnimationData()) {
+				RE::BSSpinLockGuard locker(animData->lock);
 
-		switch (a_mode) {
-            case Expression::Mode::Reset: {
-                animData->ClearExpressionOverride();
-                animData->Reset(0.0f, true, true, true, false);
-                return true;
-            }
-            case Expression::Mode::Phoneme: {
-                Expression::SmoothSetPhoneme(animData, a_id1, a_value);
-                return true;
-            }
-            case Expression::Mode::Modifier: {
-                Expression::SmoothSetModifier(animData, a_id1, a_id2, a_value);
-                return true;
-            }
-		}
+				std::srand(static_cast<unsigned int>(std::time(nullptr)));
+				
+				logs::info("SetPhonemeModifierSmooth: entering loop");
 
-		return false;
+				switch (a_mode) {
+					case Expression::Mode::Reset: {
+						animData->ClearExpressionOverride();
+						animData->Reset(0.0f, true, true, true, false);
+					}
+					case Expression::Mode::Phoneme: {
+						Expression::SmoothSetPhoneme(animData, a_id1, a_value, a_speed, a_time);
+					}
+					case Expression::Mode::Modifier: {
+						Expression::SmoothSetModifier(animData, a_id1, a_id2, a_value, a_time);
+					}
+					default: {
+						result = false;
+						break;
+					}
+				}
+
+				logs::info("SetPhonemeModifierSmooth: exiting loop");
+
+			} else {
+				result = false;
+			}
+			
+			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, result);
+			
+		});
+		
+		return true;
 	}
 
-	int SmoothSetExpression(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength = 0, float a_modifier = 1.0, float a_speed = 2.0) {
-        int t2;
-        a_strength = static_cast<int>(a_strength * a_modifier);
-
+	int SmoothSetExpression(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay, RE::VMStackID a_stackId) {
+       
 		auto animData = a_actor->GetFaceGenAnimationData();
 
 		if (!animData) {
 			return false;
 		}
 
-		RE::BSSpinLockGuard locker(animData->lock);
+		SKSE::GetTaskInterface()->AddTask([=]{
 
-        while (a_currentStrength != a_strength) {
-            t2 = (a_strength - a_currentStrength) / std::abs(a_strength - a_currentStrength);
-            a_currentStrength = a_currentStrength + t2 * a_speed;
+        	int strength = static_cast<int>(a_strength * a_modifier);
 
-            if ((a_strength - a_currentStrength) / t2 < 0) {
-                a_currentStrength = a_strength;
-            }
+			logs::info("SmoothSetExpression: entering loop");
 
-            animData->SetExpressionOverride(a_mood, a_currentStrength);
-        }
+			int i = 1000;
+			while (a_currentStrength != a_strength) {
+				if (i != 1000)
+					std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
+				
+				RE::BSSpinLockGuard locker(animData->lock);
+				int t2 = (a_strength - a_currentStrength) / std::abs(a_strength - a_currentStrength);
 
-        return a_currentStrength;
+				strength = a_currentStrength + t2 * a_speed;
+
+				if ((a_strength - a_currentStrength) / t2 < 0) {
+					strength = a_strength;
+				}
+
+				animData->SetExpressionOverride(a_mood, strength);
+				i -= 1;
+				
+				logs::info("iters left {}", i);
+				if (i <= 0)
+					break;
+			}
+
+			logs::info("SmoothSetExpression: exiting loop");
+
+			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<int>(a_stackId, true);
+		});
+
+        return true;
     }
 }

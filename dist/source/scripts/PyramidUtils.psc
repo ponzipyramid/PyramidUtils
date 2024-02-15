@@ -51,3 +51,8 @@ Function RegisterForAllAlphaNumericKeys(Form akForm) global
         i += 1
     endWhile
 EndFunction
+
+; Expressions
+Bool Function SetPhonemeModifierSmooth(Actor akActor, int aiMode, int aiId1, int aiId2, int aiValue) global native
+Int Function SmoothSetExpression(Actor akActor, int aiMood, int aiStrength, int aiCurrentStrength = 0, float aiModifier = 1.0, float aiSpeed = 2.0) global native
+
