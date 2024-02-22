@@ -179,28 +179,32 @@ namespace PyramidUtils::Expression {
 			return false;
 		}
 
-		SKSE::GetTaskInterface()->AddTask([=]{
+		std::thread t([=]() {
 			bool result = true;
 
 			if (auto animData = a_actor->GetFaceGenAnimationData()) {
 				RE::BSSpinLockGuard locker(animData->lock);
 
 				std::srand(static_cast<unsigned int>(std::time(nullptr)));
-				
+
 				SKSE::log::info("SetPhonemeModifierSmooth: entering loop");
 
 				switch (a_mode) {
-					case Mode::Reset: {
+				case Mode::Reset:
+					{
 						animData->ClearExpressionOverride();
 						animData->Reset(0.0f, true, true, true, false);
 					}
-					case Mode::Phoneme: {
+				case Mode::Phoneme:
+					{
 						SmoothSetPhoneme(animData, a_id1, a_value, a_speed, a_time);
 					}
-					case Mode::Modifier: {
+				case Mode::Modifier:
+					{
 						SmoothSetModifier(animData, a_id1, a_id2, a_value, a_speed, a_time);
 					}
-					default: {
+				default:
+					{
 						result = false;
 						break;
 					}
@@ -211,10 +215,10 @@ namespace PyramidUtils::Expression {
 			} else {
 				result = false;
 			}
-			
+
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, result);
-			
 		});
+		t.detach();
 		
 		return true;
 	}
@@ -245,18 +249,15 @@ namespace PyramidUtils::Expression {
 		if (!animData) {
 			return false;
 		}
-
-		SKSE::GetTaskInterface()->AddTask([=] {
-
+		std::thread t([=]() {
 			int exp_dest = static_cast<int>(a_strength * a_modifier);
 			int exp_value = a_currentStrength;
 			SKSE::log::info("SmoothSetExpression: entering loop");
 			RE::BSSpinLockGuard locker(animData->lock);
-			
+
 			while (exp_value != exp_dest) {
-				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
-			
+
 				int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
 
 				exp_value = exp_value + static_cast<int>(t2 * a_speed);
@@ -271,6 +272,7 @@ namespace PyramidUtils::Expression {
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
 		});
+		t.detach();
 
 		return true;
 	}
@@ -281,7 +283,7 @@ namespace PyramidUtils::Expression {
 		if (!animData) {
 			return false;
 		}
-		SKSE::GetTaskInterface()->AddTask([=] {
+		std::thread t([=]() {
 			RE::BSSpinLockGuard locker(animData->lock);
 
 			// Blinks
@@ -313,7 +315,7 @@ namespace PyramidUtils::Expression {
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
 		});
-		
+		t.detach();
 
 		return true;
 	}
