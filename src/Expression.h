@@ -11,7 +11,10 @@ namespace PyramidUtils::Expression {
 		ExpressionValue,
 		ExpressionId
 	};
-
+	inline int randomInt(int min, int max)
+	{
+		return min + rand() % (max - min + 1);
+	}
 	inline int GetExpressionId(RE::Actor* a_actor)
 	{
 		SKSE::log::info("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE");
@@ -92,24 +95,20 @@ namespace PyramidUtils::Expression {
 		int t1 = animData->phenomeKeyFrame.count ? static_cast<int>(std::lround(animData->phenomeKeyFrame.values[a_id] * 100.0f)) : 0;
 		int t2 = 0;
 
-		while (t1 != a_value) {
-			t2 = (a_value - t1) / std::abs(a_value - t1);
-			t1 = t1 + static_cast<int>(t2 * a_speed);
+		if (t1 != a_value) {
+			while (t1 != a_value) {
+				t2 = (a_value - t1) / std::abs(a_value - t1);
+				t1 = t1 + static_cast<int>(t2 * a_speed);
 
-			if ((a_value - t1) / t2 < 0)
-			{
-				t1 = a_value;
+				if ((a_value - t1) / t2 < 0) {
+					t1 = a_value;
+				}
+				animData->lock.Lock();
+				animData->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
+				animData->lock.Unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
 			}
-
-			animData->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
-
-			std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
 		}
-	}
-
-	inline int randomInt(int min, int max)
-	{
-		return min + rand() % (max - min + 1);
 	}
 
 	inline void SmoothSetModifier(RE::BSFaceGenAnimationData* animData, int mod1, int mod2, int str_dest, float a_speed, int a_delay)
@@ -125,6 +124,10 @@ namespace PyramidUtils::Expression {
 		int t2;
 		int t3;
 		int speed;
+
+		if (t1 == str_dest) {
+			return;
+		}
 
 		if (mod1 < 2) {
 			if (str_dest > 0) {
@@ -155,6 +158,7 @@ namespace PyramidUtils::Expression {
 				t1 = str_dest;
 			}
 			//simulate identical time for both e.g. brows change
+			animData->lock.Lock();
 			if (!(mod2 < 0 || mod2 > 13)) {
 				t3 = randomInt(0, 1);
 				animData->modifierKeyFrame.SetValue(mod1 * t3 + mod2 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
@@ -164,7 +168,7 @@ namespace PyramidUtils::Expression {
 			else {
 				animData->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
 			}
-
+			animData->lock.Unlock();
 			std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
 		}
 	}
@@ -183,7 +187,6 @@ namespace PyramidUtils::Expression {
 			bool result = true;
 
 			if (auto animData = a_actor->GetFaceGenAnimationData()) {
-				RE::BSSpinLockGuard locker(animData->lock);
 
 				std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
@@ -192,8 +195,10 @@ namespace PyramidUtils::Expression {
 				switch (a_mode) {
 				case Mode::Reset:
 					{
+						RE::BSSpinLockGuard locker(animData->lock);
 						animData->ClearExpressionOverride();
 						animData->Reset(0.0f, true, true, true, false);
+
 					}
 				case Mode::Phoneme:
 					{
@@ -226,18 +231,21 @@ namespace PyramidUtils::Expression {
 	{
 		int exp_dest = static_cast<int>(a_strength * a_modifier);
 		int exp_value = a_currentStrength;
+		
+		if (exp_value != exp_dest) {
+			while (exp_value != exp_dest) {
+				int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
 
-		while (exp_value != exp_dest) {
-			std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
+				exp_value = exp_value + static_cast<int>(t2 * a_speed);
 
-			int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
-
-			exp_value = exp_value + static_cast<int>(t2 * a_speed);
-
-			if ((exp_dest - exp_value) / t2 < 0) {
-				exp_value = exp_dest;
+				if ((exp_dest - exp_value) / t2 < 0) {
+					exp_value = exp_dest;
+				}
+				animData->lock.Lock();
+				animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
+				animData->lock.Unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
 			}
-			animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
 		}
 		return true;
 	}
@@ -253,21 +261,21 @@ namespace PyramidUtils::Expression {
 			int exp_dest = static_cast<int>(a_strength * a_modifier);
 			int exp_value = a_currentStrength;
 			SKSE::log::info("SmoothSetExpression: entering loop");
-			RE::BSSpinLockGuard locker(animData->lock);
+			if (exp_value != exp_dest) {
+				while (exp_value != exp_dest) {
+					int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
 
-			while (exp_value != exp_dest) {
-				std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
+					exp_value = exp_value + static_cast<int>(t2 * a_speed);
 
-				int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
-
-				exp_value = exp_value + static_cast<int>(t2 * a_speed);
-
-				if ((exp_dest - exp_value) / t2 < 0) {
-					exp_value = exp_dest;
+					if ((exp_dest - exp_value) / t2 < 0) {
+						exp_value = exp_dest;
+					}
+					animData->lock.Lock();
+					animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
+					animData->lock.Unlock();
+					std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
 				}
-				animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
 			}
-
 			SKSE::log::info("SmoothSetExpression: exiting loop");
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
@@ -284,7 +292,7 @@ namespace PyramidUtils::Expression {
 			return false;
 		}
 		std::thread t([=]() {
-			RE::BSSpinLockGuard locker(animData->lock);
+			//RE::BSSpinLockGuard locker(animData->lock);
 
 			// Blinks
 			SmoothSetModifier(animData, 0, 1, 0, a_speed, a_delay);
