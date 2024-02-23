@@ -50,7 +50,7 @@ namespace PyramidUtils::Expression {
 		{
 			if (animData->expressionKeyFrame.values[i] != 0.0f)
 			{
-				return static_cast<int>(animData->expressionKeyFrame.values[i]);
+				return static_cast<int>(animData->expressionKeyFrame.values[i] * 100.0f);
 			}
 		}
 
@@ -69,7 +69,7 @@ namespace PyramidUtils::Expression {
 		if (animData == nullptr) return 0;
 		if (phonemeId < 0 && phonemeId > 15) return 0;
 
-		return static_cast<int>(animData->phenomeKeyFrame.values[phonemeId]);
+		return static_cast<int>(animData->phenomeKeyFrame.values[phonemeId] * 100.0f);
 		
 	}
 
@@ -101,7 +101,7 @@ namespace PyramidUtils::Expression {
 				t1 = a_value;
 			}
 
-			animData->phenomeKeyFrame.SetValue(a_id, std::clamp(a_value, 0, 100) / 100.0f);
+			animData->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
 
 			std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
 		}
