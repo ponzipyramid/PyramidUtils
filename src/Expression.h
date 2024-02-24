@@ -87,7 +87,7 @@ namespace PyramidUtils::Expression {
 		if (animData == nullptr) return 0;
 		if (modifierId < 0 && modifierId > 13) return 0;
 
-		return static_cast<int>(animData->modifierKeyFrame.values[modifierId]);
+		return static_cast<int>(animData->modifierKeyFrame.values[modifierId] * 100.0f);
 	}
 
     inline void SmoothSetPhoneme(RE::BSFaceGenAnimationData* animData, int a_id, int a_value, float a_speed, int a_delay)
@@ -186,7 +186,7 @@ namespace PyramidUtils::Expression {
 		std::thread t([=]() {
 			bool result = true;
 
-			if (auto animData = a_actor->GetFaceGenAnimationData()) {
+			auto animData = a_actor->GetFaceGenAnimationData();
 
 				std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
@@ -216,10 +216,6 @@ namespace PyramidUtils::Expression {
 				}
 
 				SKSE::log::info("SetPhonemeModifierSmooth: exiting loop");
-
-			} else {
-				result = false;
-			}
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, result);
 		});
