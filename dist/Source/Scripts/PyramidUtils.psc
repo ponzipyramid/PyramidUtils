@@ -58,16 +58,24 @@ EndFunction
 ;apExpression       = raw expression construct.
 ;aiStrength         = strength which will be used to modify expression. Range 1-100
 ;abOpenMouth        = if true, will edit phonems to open mouth little
-;aiPriority         = expression priority. This needs to be bigger that already applied expression, otherwise expression will not applied
+;exprPower          = used if expression is set but expr value is 0 in the preset (dynamic expr) 
+;exprStrModifier, modStrModifier,  phStrModifier= values will be miltiplied by those
+;afSpeed            = impacts amount of iterations
+;aiDelay            = timemout in milliseconds between each iteration
 ;        =Return value=
 ;Return true in case that expression was successfully applied
-; Apply expression from aaExpression to actor akActor
+; Apply expression array [31] to actor akActor
 bool Function ApplyExpressionPreset(Actor akActor, float[] aaExpression, bool abOpenMouth, int exprPower, float exprStrModifier, float modStrModifier, float phStrModifier, float afSpeed, int aiDelay)  global native 
+;aId1 -expression id, aiValue - expression strength
+;aiId2 used for parallel modifiers that have same strength like brows/squints ets. if not needed set to -1
+;aiMode -1 for reset (other values ignored then) 0 for phonemes, 1 for modifiers
 bool function SetPhonemeModifierSmooth(Actor akActor, int aiMode, int aId1, int aiId2, int aiValue, float afSpeed, int aiDelay) global native
+;aiCurrentStrength - [offset] set to current value to make the strength adjustment for the same aiMood.
+;afModifier value will be miltiplied by this
 bool function SetExpressionSmooth(Actor akActor, int aiMood, int aiStrength, int aiCurrentStrength, float afModifier, float afSpeed, int aiDelay) global native
 bool function ResetMFGSmooth(Actor akActor, float afSpeed, int aiDelay) global native
 
-; get phoneme/modifier/expression
+; get phoneme/modifier/expression values
 int function GetPhonemeValue(Actor act, int id) global native
 int function GetModifierValue(Actor act, int id) global native
 

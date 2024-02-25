@@ -353,6 +353,20 @@ namespace PyramidUtils::Expression {
 			int i = 0;
 			int p = 0;
 			int m = 0;
+
+			// Set expression
+			int exprNum = static_cast<int>(a_expression[30]);
+			int exprStrResult = static_cast<int>(a_expression[31] * 100.0 * exprStrModifier);
+
+			// dynamic exprPower for non angry expressions
+			if (exprNum > 0) {
+				if (exprStrResult == 0) {
+					exprStrResult = exprPower;
+				}
+			}
+			if (!a_openMouth) {
+				SmoothSetExpression(animData, exprNum, exprStrResult, 0, exprStrModifier, a_speed, a_delay);
+			}
 			// Set Phoneme
 			while (p <= 15) {
 				if (!a_openMouth && GetPhonemeValue(a_actor, p) != a_expression[i]) {
@@ -380,19 +394,6 @@ namespace PyramidUtils::Expression {
 				++i;
 				++m;
 			}
-
-			// Set expression
-			int exprNum = static_cast<int>(a_expression[30]);
-			int exprStrResult = static_cast<int>(a_expression[31] * 100.0 * exprStrModifier);
-
-			// dynamic exprPower for non angry expressions
-			if (exprNum > 0) {
-				if (exprStrResult == 0) {
-					exprStrResult = exprPower;
-				}
-			}
-
-			SmoothSetExpression(animData, exprNum, exprStrResult, 0, exprStrModifier, a_speed, a_delay);
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
 		});
