@@ -15,6 +15,15 @@ namespace PyramidUtils::Expression {
 	{
 		return min + rand() % (max - min + 1);
 	}
+	inline int getDelayPlusRandom(int a_delay)
+	{
+		return a_delay + randomInt(0, a_delay);
+	}
+	inline int getShortenedDelay(int a_delay)
+	{
+		return a_delay/5 + randomInt(0, a_delay/3);
+	}
+
 	inline int GetExpressionId(RE::Actor* a_actor)
 	{
 		SKSE::log::info("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE");
@@ -57,7 +66,7 @@ namespace PyramidUtils::Expression {
 			}
 		}
 
-		//neutral value
+		//neutral value - 0
 		return 0;
 	}
 
@@ -90,6 +99,15 @@ namespace PyramidUtils::Expression {
 		return static_cast<int>(animData->modifierKeyFrame.values[modifierId] * 100.0f);
 	}
 
+	inline bool ResetMFG(RE::BSFaceGenAnimationData* animData)
+	{
+		animData->lock.Lock();
+		animData->ClearExpressionOverride();
+		animData->Reset(0.0f, true, true, true, false);
+		animData->lock.Unlock();
+		return true;
+	}
+
     inline void SmoothSetPhoneme(RE::BSFaceGenAnimationData* animData, int a_id, int a_value, float a_speed, int a_delay)
 	{
 		int t1 = animData->phenomeKeyFrame.count ? static_cast<int>(std::lround(animData->phenomeKeyFrame.values[a_id] * 100.0f)) : 0;
@@ -106,7 +124,7 @@ namespace PyramidUtils::Expression {
 				animData->lock.Lock();
 				animData->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
 				animData->lock.Unlock();
-				std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 		}
 	}
@@ -158,18 +176,22 @@ namespace PyramidUtils::Expression {
 				t1 = str_dest;
 			}
 			//simulate identical time for both e.g. brows change
-			animData->lock.Lock();
 			if (!(mod2 < 0 || mod2 > 13)) {
 				t3 = randomInt(0, 1);
+				animData->lock.Lock();
 				animData->modifierKeyFrame.SetValue(mod1 * t3 + mod2 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
 				animData->modifierKeyFrame.SetValue(mod2 * t3 + mod1 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
-
+				animData->lock.Unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getShortenedDelay(a_delay)});
 			}
 			else {
+				animData->lock.Lock();
 				animData->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
+				animData->lock.Unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
-			animData->lock.Unlock();
-			std::this_thread::sleep_for(std::chrono::milliseconds{a_delay});
+			
+			
 		}
 	}
 
@@ -195,10 +217,7 @@ namespace PyramidUtils::Expression {
 				switch (a_mode) {
 				case Mode::Reset:
 					{
-						RE::BSSpinLockGuard locker(animData->lock);
-						animData->ClearExpressionOverride();
-						animData->Reset(0.0f, true, true, true, false);
-
+						ResetMFG(animData);
 					}
 				case Mode::Phoneme:
 					{
@@ -223,7 +242,7 @@ namespace PyramidUtils::Expression {
 		
 		return true;
 	}
-	inline bool SmoothSetExpressionLocal(RE::BSFaceGenAnimationData* animData, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay)
+	inline bool SmoothSetExpression(RE::BSFaceGenAnimationData* animData, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay)
 	{
 		int exp_dest = static_cast<int>(a_strength * a_modifier);
 		int exp_value = a_currentStrength;
@@ -240,48 +259,30 @@ namespace PyramidUtils::Expression {
 				animData->lock.Lock();
 				animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
 				animData->lock.Unlock();
-				std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 		}
 		return true;
 	}
 
-	inline bool SmoothSetExpression(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay, RE::VMStackID a_stackId) {
-
+	inline bool SetExpressionSmooth(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay, RE::VMStackID a_stackId)
+	{
 		auto animData = a_actor->GetFaceGenAnimationData();
 
 		if (!animData) {
 			return false;
 		}
 		std::thread t([=]() {
-			int exp_dest = static_cast<int>(a_strength * a_modifier);
-			int exp_value = a_currentStrength;
-			SKSE::log::info("SmoothSetExpression: entering loop");
-			if (exp_value != exp_dest) {
-				while (exp_value != exp_dest) {
-					int t2 = (exp_dest - exp_value) / std::abs(exp_dest - exp_value);
-
-					exp_value = exp_value + static_cast<int>(t2 * a_speed);
-
-					if ((exp_dest - exp_value) / t2 < 0) {
-						exp_value = exp_dest;
-					}
-					animData->lock.Lock();
-					animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
-					animData->lock.Unlock();
-					std::this_thread::sleep_for(std::chrono::milliseconds{ a_delay });
-				}
-			}
-			SKSE::log::info("SmoothSetExpression: exiting loop");
-
+			SmoothSetExpression(animData, a_mood, a_strength, a_currentStrength, a_modifier, a_speed, a_delay);
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
 		});
 		t.detach();
 
 		return true;
 	}
-	
-	inline bool SmoothResetMFG(RE::Actor* a_actor, float a_speed, int a_delay, int a_stackId) {
+
+
+	inline bool ResetMFGSmooth(RE::Actor* a_actor, float a_speed, int a_delay, int a_stackId) {
 		auto animData = a_actor->GetFaceGenAnimationData();
 
 		if (!animData) {
@@ -315,7 +316,83 @@ namespace PyramidUtils::Expression {
 			}
 
 			// Expressions
-			SmoothSetExpressionLocal(animData, GetExpressionId(a_actor), 0, GetExpressionValue(a_actor), 1, a_speed, a_delay);
+			SmoothSetExpression(animData, GetExpressionId(a_actor), 0, GetExpressionValue(a_actor), 1, a_speed, a_delay);
+
+	
+
+			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
+		});
+		t.detach();
+
+		return true;
+	}
+
+	inline bool ApplyExpressionPreset(RE::Actor* a_actor, std::vector<float> a_expression, bool a_openMouth, int exprPower, float exprStrModifier, float modStrModifier, float phStrModifier, float a_speed, int a_delay, RE::VMStackID a_stackId)
+	{
+		SKSE::log::info("ApplyExpressionRaw({}) called", a_actor ? a_actor->GetName() : "NONE");
+
+		if (a_actor == nullptr)
+		{
+			SKSE::log::error("No actor selected");
+			return false;
+		}
+			
+		if (a_expression.size() != 32) {
+			SKSE::log::error("Expression is of incorrect size - returning");
+			return false;
+		}
+		auto animData = a_actor->GetFaceGenAnimationData();
+
+		if (!animData) {
+			SKSE::log::error("No animdata found");
+			return false;
+		}
+
+		std::thread t([=]() {
+
+			int i = 0;
+			int p = 0;
+			int m = 0;
+			// Set Phoneme
+			while (p <= 15) {
+				if (!a_openMouth && GetPhonemeValue(a_actor, p) != a_expression[i]) {
+					SmoothSetPhoneme(animData, p, static_cast<int>(a_expression[i] * 100.0 * phStrModifier), a_speed, a_delay);
+				}
+				++i;
+				++p;
+			}
+
+			while (m <= 13) {
+				if (GetModifierValue(a_actor, m) != a_expression[i]) {
+					// both eyes involved
+					if (m == 0 || m == 2 || m == 4 || m == 6 || m == 12) {
+						if (a_expression[i] == a_expression[i + 1]) {
+							SmoothSetModifier(animData, m, m + 1, static_cast<int>(a_expression[i] * 100.0 * modStrModifier), a_speed, a_delay);
+							++i;
+							++m;
+						} else {
+							SmoothSetModifier(animData, m, -1, static_cast<int>(a_expression[i] * 100.0 * modStrModifier), a_speed, a_delay);
+						}
+					} else {
+						SmoothSetModifier(animData, m, -1, static_cast<int>(a_expression[i] * 100.0 * modStrModifier), a_speed, a_delay);
+					}
+				}
+				++i;
+				++m;
+			}
+
+			// Set expression
+			int exprNum = static_cast<int>(a_expression[30]);
+			int exprStrResult = static_cast<int>(a_expression[31] * 100.0 * exprStrModifier);
+
+			// dynamic exprPower for non angry expressions
+			if (exprNum > 0) {
+				if (exprStrResult == 0) {
+					exprStrResult = exprPower;
+				}
+			}
+
+			SmoothSetExpression(animData, exprNum, exprStrResult, 0, exprStrModifier, a_speed, a_delay);
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
 		});
