@@ -1,6 +1,7 @@
 #include "Papyrus.h"
 #include "ActorManager.h"
 #include "Input.h"
+#include "Expression.h"
 
 using namespace PyramidUtils;
 
@@ -171,6 +172,47 @@ namespace {
         a_str.replace(a_index, a_replacement.size(), a_replacement);
         return a_str;
     }
+
+	RE::BSScript::LatentStatus SetPhonemeModifierSmooth(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value, float a_speed, int a_delay)
+	{
+		return Expression::SetPhonemeModifierSmooth(a_actor, a_mode, a_id1, a_id2, a_value, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
+	}
+
+	RE::BSScript::LatentStatus SetExpressionSmooth(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay)
+	{
+		return Expression::SetExpressionSmooth(a_actor, a_mood, a_strength, a_currentStrength, a_modifier, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
+	}
+
+	RE::BSScript::LatentStatus ResetMFGSmooth(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, float a_speed, int a_delay)
+	{
+		return Expression::ResetMFGSmooth(a_actor, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
+	};
+
+    RE::BSScript::LatentStatus ApplyExpressionPreset(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, std::vector<float> a_expression, bool a_openMouth, int exprPower, float exprStrModifier, float modStrModifier, float phStrModifier, float a_speed, int a_delay)
+	{
+		return Expression::ApplyExpressionPreset(a_actor, a_expression, a_openMouth, exprPower, exprStrModifier, modStrModifier, phStrModifier, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
+	};
+
+	int GetPhonemeValue(RE::StaticFunctionTag*, RE::Actor* a_actor, int a_id)
+	{
+		return Expression::GetPhonemeValue(a_actor, a_id);
+	}
+
+	int GetModifierValue(RE::StaticFunctionTag*, RE::Actor* a_actor, int a_id)
+	{
+		return Expression::GetModifierValue(a_actor, a_id);
+	}
+
+	int GetExpressionValue(RE::StaticFunctionTag*, RE::Actor* a_actor)
+	{
+		return Expression::GetExpressionValue(a_actor);
+	}
+
+	int GetExpressionId(RE::StaticFunctionTag*, RE::Actor* a_actor)
+	{
+		return Expression::GetExpressionId(a_actor);
+	}
+	
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -194,6 +236,17 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     
     // strings
     vm->RegisterFunction("ReplaceAt", PapyrusClass, ReplaceAt);
+
+	// expressions
+	vm->RegisterLatentFunction<bool>("SetPhonemeModifierSmooth", PapyrusClass, SetPhonemeModifierSmooth);
+	vm->RegisterLatentFunction<bool>("SetExpressionSmooth", PapyrusClass, SetExpressionSmooth);
+	vm->RegisterLatentFunction<bool>("ResetMFGSmooth", PapyrusClass, ResetMFGSmooth);
+	vm->RegisterLatentFunction<bool>("ApplyExpressionPreset", PapyrusClass, ApplyExpressionPreset);
+	
+	vm->RegisterFunction("GetExpressionId", PapyrusClass, GetExpressionId);
+	vm->RegisterFunction("GetExpressionValue", PapyrusClass, GetExpressionValue);
+	vm->RegisterFunction("GetPhonemeValue", PapyrusClass, GetPhonemeValue);
+	vm->RegisterFunction("GetModifierValue", PapyrusClass, GetModifierValue);
 
     return true;
 }
