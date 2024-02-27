@@ -37,13 +37,14 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	SKSE::Init(a_skse);
 
-	Hooks::Install();
+	if (REL::Module::GetRuntime() != REL::Module::Runtime::VR)
+		Hooks::Install();
 
 	const auto papyrus = SKSE::GetPapyrusInterface();
 	papyrus->Register(Papyrus::RegisterFunctions);
 
 	const auto serialization = SKSE::GetSerializationInterface();
-	serialization->SetUniqueID('puti');
+	serialization->SetUniqueID(Serialize::UtilRecord);
 	serialization->SetSaveCallback(Serialize::Save);
 	serialization->SetLoadCallback(Serialize::Load);
 	serialization->SetRevertCallback(Serialize::Revert);
