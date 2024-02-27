@@ -183,9 +183,9 @@ namespace {
 		return Expression::SetExpressionSmooth(a_actor, a_mood, a_strength, a_currentStrength, a_modifier, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
 	}
 
-	RE::BSScript::LatentStatus ResetMFGSmooth(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, float a_speed, int a_delay)
+	RE::BSScript::LatentStatus ResetMFGSmooth(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, int a_mode, float a_speed, int a_delay)
 	{
-		return Expression::ResetMFGSmooth(a_actor, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
+		return Expression::ResetMFGSmooth(a_actor, a_mode, a_speed, a_delay, a_stackId) ? RE::BSScript::LatentStatus::kStarted : RE::BSScript::LatentStatus::kFailed;
 	};
 
     RE::BSScript::LatentStatus ApplyExpressionPreset(RE::BSScript::Internal::VirtualMachine*, RE::VMStackID a_stackId, RE::StaticFunctionTag*, RE::Actor* a_actor, std::vector<float> a_expression, bool a_openMouth, int exprPower, float exprStrModifier, float modStrModifier, float phStrModifier, float a_speed, int a_delay)
