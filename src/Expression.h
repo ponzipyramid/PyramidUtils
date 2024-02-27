@@ -7,9 +7,7 @@ namespace PyramidUtils::Expression {
 	{
 		Reset = -1,
 		Phoneme,
-		Modifier,
-		ExpressionValue,
-		ExpressionId
+		Modifier
 	};
 	inline int randomInt(int min, int max)
 	{
@@ -212,29 +210,29 @@ namespace PyramidUtils::Expression {
 
 				std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-				SKSE::log::info("SetPhonemeModifierSmooth: entering loop");
-
 				switch (a_mode) {
 				case Mode::Reset:
 					{
 						ResetMFG(animData);
+						break;
 					}
 				case Mode::Phoneme:
 					{
 						SmoothSetPhoneme(animData, a_id1, a_value, a_speed, a_time);
+						break;
 					}
 				case Mode::Modifier:
 					{
 						SmoothSetModifier(animData, a_id1, a_id2, a_value, a_speed, a_time);
+						break;
 					}
 				default:
 					{
 						result = false;
+						SKSE::log::warn("SetPhonemeModifierSmooth: unexpected aimode");
 						break;
 					}
 				}
-
-				SKSE::log::info("SetPhonemeModifierSmooth: exiting loop");
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, result);
 		});
@@ -242,6 +240,7 @@ namespace PyramidUtils::Expression {
 		
 		return true;
 	}
+
 	inline bool SmoothSetExpression(RE::BSFaceGenAnimationData* animData, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay)
 	{
 		int exp_dest = static_cast<int>(a_strength * a_modifier);
@@ -282,43 +281,81 @@ namespace PyramidUtils::Expression {
 	}
 
 
-	inline bool ResetMFGSmooth(RE::Actor* a_actor, float a_speed, int a_delay, int a_stackId) {
+	inline bool ResetMFGSmooth(RE::Actor* a_actor, int a_mode, float a_speed, int a_delay, int a_stackId)
+	{
 		auto animData = a_actor->GetFaceGenAnimationData();
 
 		if (!animData) {
 			return false;
 		}
 		std::thread t([=]() {
-			//RE::BSSpinLockGuard locker(animData->lock);
+			switch (a_mode) {
+			case Mode::Reset:
+				{
+					// Blinks
+					SmoothSetModifier(animData, 0, 1, 0, a_speed, a_delay);
 
-			// Blinks
-			SmoothSetModifier(animData, 0, 1, 0, a_speed, a_delay);
+					// Brows
+					SmoothSetModifier(animData, 2, 3, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 4, 5, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 6, 7, 0, a_speed, a_delay);
 
-			// Brows
-			SmoothSetModifier(animData, 2, 3, 0, a_speed, a_delay);
-			SmoothSetModifier(animData, 4, 5, 0, a_speed, a_delay);
-			SmoothSetModifier(animData, 6, 7, 0, a_speed, a_delay);
+					// Eyes
+					SmoothSetModifier(animData, 8, -1, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 9, -1, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 10, -1, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 11, -1, 0, a_speed, a_delay);
 
-			// Eyes
-			SmoothSetModifier(animData, 8, -1, 0, a_speed, a_delay);
-			SmoothSetModifier(animData, 9, -1, 0, a_speed, a_delay);
-			SmoothSetModifier(animData, 10, -1, 0, a_speed, a_delay);
-			SmoothSetModifier(animData, 11, -1, 0, a_speed, a_delay);
+					// Squints
+					SmoothSetModifier(animData, 12, 13, 0, a_speed, a_delay);
 
-			// Squints
-			SmoothSetModifier(animData, 12, 13, 0, a_speed, a_delay);
+					// Mouth
+					int p = 0;
+					while (p <= 15) {
+						SmoothSetPhoneme(animData, p, 0, a_speed, a_delay);
+						p = p + 1;
+					}
 
-			// Mouth
-			int p = 0;
-			while (p <= 15) {
-				SmoothSetPhoneme(animData, p, 0, a_speed, a_delay);
-				p = p + 1;
+					// Expressions
+					SmoothSetExpression(animData, GetExpressionId(a_actor), 0, GetExpressionValue(a_actor), 1, a_speed, a_delay);
+					break;
+				}
+			case Mode::Phoneme:
+				{
+					// Mouth
+					int p = 0;
+					while (p <= 15) {
+						SmoothSetPhoneme(animData, p, 0, a_speed, a_delay);
+						p = p + 1;
+					}
+					break;
+				}
+			case Mode::Modifier:
+				{
+					// Blinks
+					SmoothSetModifier(animData, 0, 1, 0, a_speed, a_delay);
+
+					// Brows
+					SmoothSetModifier(animData, 2, 3, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 4, 5, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 6, 7, 0, a_speed, a_delay);
+
+					// Eyes
+					SmoothSetModifier(animData, 8, -1, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 9, -1, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 10, -1, 0, a_speed, a_delay);
+					SmoothSetModifier(animData, 11, -1, 0, a_speed, a_delay);
+
+					// Squints
+					SmoothSetModifier(animData, 12, 13, 0, a_speed, a_delay);
+					break;
+				}
+			default:
+				{
+					SKSE::log::warn("ResetMFGSmooth: unexpected aimode");
+					break;
+				}
 			}
-
-			// Expressions
-			SmoothSetExpression(animData, GetExpressionId(a_actor), 0, GetExpressionValue(a_actor), 1, a_speed, a_delay);
-
-	
 
 			RE::BSScript::Internal::VirtualMachine::GetSingleton()->ReturnLatentResult<bool>(a_stackId, true);
 		});
@@ -329,7 +366,6 @@ namespace PyramidUtils::Expression {
 
 	inline bool ApplyExpressionPreset(RE::Actor* a_actor, std::vector<float> a_expression, bool a_openMouth, int exprPower, float exprStrModifier, float modStrModifier, float phStrModifier, float a_speed, int a_delay, RE::VMStackID a_stackId)
 	{
-		SKSE::log::info("ApplyExpressionRaw({}) called", a_actor ? a_actor->GetName() : "NONE");
 
 		if (a_actor == nullptr)
 		{
