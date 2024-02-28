@@ -56,7 +56,7 @@ namespace PyramidUtils::Expression {
 		
 		if (!a_actor) {
 			SKSE::log::warn("No actor found");
-			return 7;
+			return 0;
 		}
 
 		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
@@ -117,7 +117,10 @@ namespace PyramidUtils::Expression {
 			return 0;
 		}
 
-		if (modifierId < 0 && modifierId > 13) return 0;
+		if (modifierId < 0 && modifierId > 13){
+			SKSE::log::warn("modifierId is out of range");
+			return 0;
+		}
 
 		return static_cast<int>(animData->modifierKeyFrame.values[modifierId] * 100.0f);
 	}
@@ -222,7 +225,7 @@ namespace PyramidUtils::Expression {
 	{
 		if (!a_actor) {
 			SKSE::log::warn("No actor found");
-			return 0;
+			return false;
 		}
 
 		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
