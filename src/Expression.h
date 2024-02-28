@@ -24,13 +24,18 @@ namespace PyramidUtils::Expression {
 
 	inline int GetExpressionId(RE::Actor* a_actor)
 	{
-		SKSE::log::info("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE");
+		SKSE::log::debug("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE");
 
-		if (a_actor == nullptr) return 7;
+		if (!a_actor) {
+			SKSE::log::warn("No actor found");
+			return 7;
+		}
 
-		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
-
-		if (animData == nullptr) return 7;
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
+		if (!animData) {
+			SKSE::log::warn("No animdata found");
+			return 7;
+		}
 
 		const size_t count_exp = animData->expressionKeyFrame.count;
 		for (int i = 0; i < count_exp; i++)
@@ -47,13 +52,18 @@ namespace PyramidUtils::Expression {
 
 	inline int GetExpressionValue(RE::Actor* a_actor)
 	{
-		SKSE::log::info("GetExpressionIValue({}) called", a_actor ? a_actor->GetName() : "NONE");
+		SKSE::log::debug("GetExpressionIValue({}) called", a_actor ? a_actor->GetName() : "NONE");
 		
-		if (a_actor == nullptr) return 0;
+		if (!a_actor) {
+			SKSE::log::warn("No actor found");
+			return 0;
+		}
 
-		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
-
-		if (animData == nullptr) return 0;
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
+		if (!animData) {
+			SKSE::log::warn("No animdata found");
+			return 0;
+		}
 
 		const size_t count_exp = animData->expressionKeyFrame.count;
 		for (int i = 0; i < count_exp; i++)
@@ -70,31 +80,50 @@ namespace PyramidUtils::Expression {
 
 	inline int GetPhonemeValue(RE::Actor* a_actor, int phonemeId)
 	{
-		SKSE::log::info("GetPhonemeValue({}) called", a_actor ? a_actor->GetName() : "NONE");
+		SKSE::log::debug("GetPhonemeValue({}) called", a_actor ? a_actor->GetName() : "NONE");
 
-		if (a_actor == nullptr) return 0;
+		if (!a_actor) {
+			SKSE::log::warn("No actor found");
+			return 0;
+		}
 
-		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
+		if (!animData) {
+			SKSE::log::warn("No animdata found");
+			return 0;
+		}
 
-		if (animData == nullptr) return 0;
-		if (phonemeId < 0 && phonemeId > 15) return 0;
+		if (phonemeId < 0 || phonemeId > 15) {
+			SKSE::log::warn("phonemeId out of range");
+			return 0;
+		}
 
-		return static_cast<int>(animData->phenomeKeyFrame.values[phonemeId] * 100.0f);
+		return animData->phenomeKeyFrame.count ? std::lround(animData->phenomeKeyFrame.values[phonemeId] * 100.0f) : 0;
 		
 	}
 
 	inline int GetModifierValue(RE::Actor* a_actor, int modifierId)
 	{
-		SKSE::log::info("GetModifierValue({}) called", a_actor ? a_actor->GetName() : "NONE");
+		SKSE::log::debug("GetModifierValue({}) called", a_actor ? a_actor->GetName() : "NONE");
 
-		if (a_actor == nullptr) return 0;
+		if (!a_actor) {
+			SKSE::log::warn("No actor found");
+			return 0;
+		}
 
-		RE::BSFaceGenAnimationData* animData = a_actor->GetFaceGenAnimationData();
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
 
-		if (animData == nullptr) return 0;
-		if (modifierId < 0 && modifierId > 13) return 0;
+		if (!animData) {
+			SKSE::log::warn("No animdata found");
+			return 0;
+		}
 
-		return static_cast<int>(animData->modifierKeyFrame.values[modifierId] * 100.0f);
+		if (modifierId < 0 || modifierId > 13) {
+			SKSE::log::warn("modifierId is out of range");
+			return 0;
+		}
+
+		return animData->modifierKeyFrame.count ? std::lround(animData->modifierKeyFrame.values[modifierId] * 100.0f) : 0;
 	}
 
 	inline bool ResetMFG(RE::BSFaceGenAnimationData* animData)
@@ -196,17 +225,19 @@ namespace PyramidUtils::Expression {
 	inline bool SetPhonemeModifierSmooth(RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value, float a_speed, int a_time, RE::VMStackID a_stackId)
 	{
 		if (!a_actor) {
+			SKSE::log::warn("No actor found");
 			return false;
 		}
 
-		if (!a_actor->GetFaceGenAnimationData()) {
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
+
+		if (!animData) {
+			SKSE::log::error("No animdata found");
 			return false;
 		}
 
 		std::thread t([=]() {
 			bool result = true;
-
-			auto animData = a_actor->GetFaceGenAnimationData();
 
 				std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
@@ -266,9 +297,10 @@ namespace PyramidUtils::Expression {
 
 	inline bool SetExpressionSmooth(RE::Actor* a_actor, int a_mood, int a_strength, int a_currentStrength, float a_modifier, float a_speed, int a_delay, RE::VMStackID a_stackId)
 	{
-		auto animData = a_actor->GetFaceGenAnimationData();
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
 
 		if (!animData) {
+			SKSE::log::error("No animdata found");
 			return false;
 		}
 		std::thread t([=]() {
@@ -283,9 +315,10 @@ namespace PyramidUtils::Expression {
 
 	inline bool ResetMFGSmooth(RE::Actor* a_actor, int a_mode, float a_speed, int a_delay, int a_stackId)
 	{
-		auto animData = a_actor->GetFaceGenAnimationData();
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
 
 		if (!animData) {
+			SKSE::log::error("No animdata found");
 			return false;
 		}
 		std::thread t([=]() {
@@ -377,7 +410,7 @@ namespace PyramidUtils::Expression {
 			SKSE::log::error("Expression is of incorrect size - returning");
 			return false;
 		}
-		auto animData = a_actor->GetFaceGenAnimationData();
+		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
 
 		if (!animData) {
 			SKSE::log::error("No animdata found");
