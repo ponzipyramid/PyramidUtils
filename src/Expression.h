@@ -93,7 +93,7 @@ namespace PyramidUtils::Expression {
 			return 0;
 		}
 
-		if (phonemeId < 0 && phonemeId > 15) {
+		if (phonemeId < 0 || phonemeId > 15) {
 			SKSE::log::warn("phonemeId out of range");
 			return 0;
 		}
@@ -118,7 +118,7 @@ namespace PyramidUtils::Expression {
 			return 0;
 		}
 
-		if (modifierId < 0 && modifierId > 13){
+		if (modifierId < 0 || modifierId > 13) {
 			SKSE::log::warn("modifierId is out of range");
 			return 0;
 		}
