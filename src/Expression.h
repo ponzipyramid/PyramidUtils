@@ -98,7 +98,7 @@ namespace PyramidUtils::Expression {
 			return 0;
 		}
 
-		return static_cast<int>(animData->phenomeKeyFrame.values[phonemeId] * 100.0f);
+		return animData->phenomeKeyFrame.count ? std::lround(animData->phenomeKeyFrame.values[phonemeId] * 100.0f) : 0;
 		
 	}
 
@@ -112,6 +112,7 @@ namespace PyramidUtils::Expression {
 		}
 
 		auto animData = reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
+
 		if (!animData) {
 			SKSE::log::warn("No animdata found");
 			return 0;
@@ -122,7 +123,7 @@ namespace PyramidUtils::Expression {
 			return 0;
 		}
 
-		return static_cast<int>(animData->modifierKeyFrame.values[modifierId] * 100.0f);
+		return animData->modifierKeyFrame.count ? std::lround(animData->modifierKeyFrame.values[modifierId] * 100.0f) : 0;
 	}
 
 	inline bool ResetMFG(RE::BSFaceGenAnimationData* animData)
