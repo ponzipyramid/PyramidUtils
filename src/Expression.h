@@ -24,21 +24,25 @@ namespace PyramidUtils::Expression {
 
 	inline RE::BSFaceGenAnimationData* GetAnimData(RE::Actor* a_actor)
 	{
-		return reinterpret_cast<RE::BSFaceGenAnimationData*>(a_actor->GetFaceGenAnimationData());
+		if (!a_actor->Is3DLoaded())
+			return nullptr;
+
+		auto data = a_actor->GetFaceGenAnimationData();
+		return data ? reinterpret_cast<RE::BSFaceGenAnimationData*>(data) : nullptr;
 	}
 
 	inline int GetExpressionId(RE::Actor* a_actor)
 	{
-		SKSE::log::debug("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE");
+		logger::debug("GetExpressionId({}) called", a_actor ? a_actor->GetName() : "NONE");
 
 		if (!a_actor) {
-			SKSE::log::warn("No actor found");
+			logger::warn("No actor found");
 			return 7;
 		}
 
 		auto animData = GetAnimData(a_actor);
 		if (!animData) {
-			SKSE::log::warn("No animdata found");
+			logger::warn("No animdata found");
 			return 7;
 		}
 
@@ -57,16 +61,16 @@ namespace PyramidUtils::Expression {
 
 	inline int GetExpressionValue(RE::Actor* a_actor)
 	{
-		SKSE::log::debug("GetExpressionIValue({}) called", a_actor ? a_actor->GetName() : "NONE");
+		logger::debug("GetExpressionIValue({}) called", a_actor ? a_actor->GetName() : "NONE");
 		
 		if (!a_actor) {
-			SKSE::log::warn("No actor found");
+			logger::warn("No actor found");
 			return 0;
 		}
 
 		auto animData = GetAnimData(a_actor);
 		if (!animData) {
-			SKSE::log::warn("No animdata found");
+			logger::warn("No animdata found");
 			return 0;
 		}
 
@@ -85,21 +89,21 @@ namespace PyramidUtils::Expression {
 
 	inline int GetPhonemeValue(RE::Actor* a_actor, int phonemeId)
 	{
-		SKSE::log::debug("GetPhonemeValue({}) called", a_actor ? a_actor->GetName() : "NONE");
+		logger::debug("GetPhonemeValue({}) called", a_actor ? a_actor->GetName() : "NONE");
 
 		if (!a_actor) {
-			SKSE::log::warn("No actor found");
+			logger::warn("No actor found");
 			return 0;
 		}
 
 		auto animData = GetAnimData(a_actor);
 		if (!animData) {
-			SKSE::log::warn("No animdata found");
+			logger::warn("No animdata found");
 			return 0;
 		}
 
 		if (phonemeId < 0 || phonemeId > 15) {
-			SKSE::log::warn("phonemeId out of range");
+			logger::warn("phonemeId out of range");
 			return 0;
 		}
 
@@ -109,22 +113,22 @@ namespace PyramidUtils::Expression {
 
 	inline int GetModifierValue(RE::Actor* a_actor, int modifierId)
 	{
-		SKSE::log::debug("GetModifierValue({}) called", a_actor ? a_actor->GetName() : "NONE");
+		logger::debug("GetModifierValue({}) called", a_actor ? a_actor->GetName() : "NONE");
 
 		if (!a_actor) {
-			SKSE::log::warn("No actor found");
+			logger::warn("No actor found");
 			return 0;
 		}
 
 		auto animData = GetAnimData(a_actor);
 
 		if (!animData) {
-			SKSE::log::warn("No animdata found");
+			logger::warn("No animdata found");
 			return 0;
 		}
 
 		if (modifierId < 0 || modifierId > 13) {
-			SKSE::log::warn("modifierId is out of range");
+			logger::warn("modifierId is out of range");
 			return 0;
 		}
 
@@ -133,11 +137,13 @@ namespace PyramidUtils::Expression {
 
 	inline bool ResetMFG(RE::Actor* a_actor)
 	{
-		auto animData = GetAnimData(a_actor);
-		animData->lock.Lock();
-		animData->ClearExpressionOverride();
-		animData->Reset(0.0f, true, true, true, false);
-		animData->lock.Unlock();
+		if (auto animData = GetAnimData(a_actor)) {
+			animData->lock.Lock();
+			animData->ClearExpressionOverride();
+			animData->Reset(0.0f, true, true, true, false);
+			animData->lock.Unlock();
+		}
+		
 		return true;
 	}
 
@@ -145,7 +151,7 @@ namespace PyramidUtils::Expression {
 	{
 		auto animData = GetAnimData(a_actor);
 		if (!animData) {
-			SKSE::log::warn("No animdata found");
+			logger::warn("No animdata found");
 			return;
 		}
 		int t1 = animData->phenomeKeyFrame.count ? static_cast<int>(std::lround(animData->phenomeKeyFrame.values[a_id] * 100.0f)) : 0;
@@ -159,9 +165,13 @@ namespace PyramidUtils::Expression {
 				if ((a_value - t1) / t2 < 0) {
 					t1 = a_value;
 				}
-				animData->lock.Lock();
-				animData->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
-				animData->lock.Unlock();
+
+				if (auto curr = GetAnimData(a_actor)) {
+					curr->lock.Lock();
+					curr->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
+					curr->lock.Unlock();
+				}
+				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 		}
@@ -176,8 +186,8 @@ namespace PyramidUtils::Expression {
 		int speed_blink = 0;
 
 		auto animData = GetAnimData(a_actor);
-		if (!animData) {
-			SKSE::log::warn("No animdata found");
+		if (!GetAnimData(a_actor)) {
+			logger::warn("No animdata found");
 			return;
 		}
 		int t1 = animData->modifierKeyFrame.count ? std::lround(animData->modifierKeyFrame.values[mod1] * 100.0f) : 0;
@@ -221,16 +231,21 @@ namespace PyramidUtils::Expression {
 			//simulate identical time for both e.g. brows change
 			if (!(mod2 < 0 || mod2 > 13)) {
 				t3 = randomInt(0, 1);
-				animData->lock.Lock();
-				animData->modifierKeyFrame.SetValue(mod1 * t3 + mod2 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
-				animData->modifierKeyFrame.SetValue(mod2 * t3 + mod1 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
-				animData->lock.Unlock();
+				if (auto curr = GetAnimData(a_actor)) {
+					curr->lock.Lock();
+					curr->modifierKeyFrame.SetValue(mod1 * t3 + mod2 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
+					curr->modifierKeyFrame.SetValue(mod2 * t3 + mod1 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
+					curr->lock.Unlock();
+				}
+				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getShortenedDelay(a_delay)});
 			}
 			else {
-				animData->lock.Lock();
-				animData->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
-				animData->lock.Unlock();
+				if (auto curr = GetAnimData(a_actor)) {
+					curr->lock.Lock();
+					curr->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
+					curr->lock.Unlock();
+				}
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 			
@@ -241,14 +256,14 @@ namespace PyramidUtils::Expression {
 	inline bool SetPhonemeModifierSmooth(RE::Actor* a_actor, int a_mode, int a_id1, int a_id2, int a_value, float a_speed, int a_time, RE::VMStackID a_stackId)
 	{
 		if (!a_actor) {
-			SKSE::log::warn("No actor found");
+			logger::warn("No actor found");
 			return false;
 		}
 
 		auto animData = GetAnimData(a_actor);
 
 		if (!animData) {
-			SKSE::log::error("No animdata found");
+			logger::error("No animdata found");
 			return false;
 		}
 
@@ -276,7 +291,7 @@ namespace PyramidUtils::Expression {
 				default:
 					{
 						result = false;
-						SKSE::log::warn("SetPhonemeModifierSmooth: unexpected aimode");
+						logger::warn("SetPhonemeModifierSmooth: unexpected aimode");
 						break;
 					}
 				}
@@ -302,14 +317,13 @@ namespace PyramidUtils::Expression {
 				if ((exp_dest - exp_value) / t2 < 0) {
 					exp_value = exp_dest;
 				}
-				auto animData = GetAnimData(a_actor);
-				if (!animData) {
-					SKSE::log::warn("No animdata found");
-					continue;
+				
+				if (auto animData = GetAnimData(a_actor)) {
+					animData->lock.Lock();
+					animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
+					animData->lock.Unlock();
 				}
-				animData->lock.Lock();
-				animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
-				animData->lock.Unlock();
+				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 		}
@@ -321,7 +335,7 @@ namespace PyramidUtils::Expression {
 		auto animData = GetAnimData(a_actor);
 
 		if (!animData) {
-			SKSE::log::error("No animdata found");
+			logger::error("No animdata found");
 			return false;
 		}
 		std::thread t([=]() {
@@ -339,7 +353,7 @@ namespace PyramidUtils::Expression {
 		auto animData = GetAnimData(a_actor);
 
 		if (!animData) {
-			SKSE::log::error("No animdata found");
+			logger::error("No animdata found");
 			return false;
 		}
 		std::thread t([=]() {
@@ -406,7 +420,7 @@ namespace PyramidUtils::Expression {
 				}
 			default:
 				{
-					SKSE::log::warn("ResetMFGSmooth: unexpected aimode");
+					logger::warn("ResetMFGSmooth: unexpected aimode");
 					break;
 				}
 			}
@@ -423,18 +437,18 @@ namespace PyramidUtils::Expression {
 
 		if (a_actor == nullptr)
 		{
-			SKSE::log::error("No actor selected");
+			logger::error("No actor selected");
 			return false;
 		}
 			
 		if (a_expression.size() != 32) {
-			SKSE::log::error("Expression is of incorrect size - returning");
+			logger::error("Expression is of incorrect size - returning");
 			return false;
 		}
 		auto animData = GetAnimData(a_actor);
 
 		if (!animData) {
-			SKSE::log::error("No animdata found");
+			logger::error("No animdata found");
 			return false;
 		}
 
