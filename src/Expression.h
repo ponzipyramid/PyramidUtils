@@ -166,14 +166,13 @@ namespace PyramidUtils::Expression {
 					t1 = a_value;
 				}
 
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 				if (auto curr = GetAnimData(a_actor)) {
 					curr->lock.Lock();
 					curr->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
 					curr->lock.Unlock();
 				} else
 					break;
-				
-				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 		}
 	}
@@ -232,6 +231,7 @@ namespace PyramidUtils::Expression {
 			//simulate identical time for both e.g. brows change
 			if (!(mod2 < 0 || mod2 > 13)) {
 				t3 = randomInt(0, 1);
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getShortenedDelay(a_delay) });
 				if (auto curr = GetAnimData(a_actor)) {
 					curr->lock.Lock();
 					curr->modifierKeyFrame.SetValue(mod1 * t3 + mod2 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
@@ -240,16 +240,17 @@ namespace PyramidUtils::Expression {
 				} else
 					break;
 				
-				std::this_thread::sleep_for(std::chrono::milliseconds{ getShortenedDelay(a_delay)});
+				
 			}
 			else {
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 				if (auto curr = GetAnimData(a_actor)) {
 					curr->lock.Lock();
 					curr->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
 					curr->lock.Unlock();
 				} else
 					break;
-				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
+				
 			}
 			
 			
@@ -320,15 +321,14 @@ namespace PyramidUtils::Expression {
 				if ((exp_dest - exp_value) / t2 < 0) {
 					exp_value = exp_dest;
 				}
-				
+
+				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 				if (auto animData = GetAnimData(a_actor)) {
 					animData->lock.Lock();
 					animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
 					animData->lock.Unlock();
 				} else
 					break;
-				
-				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 		}
 		return true;
