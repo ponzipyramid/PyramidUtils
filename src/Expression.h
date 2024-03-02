@@ -170,7 +170,8 @@ namespace PyramidUtils::Expression {
 					curr->lock.Lock();
 					curr->phenomeKeyFrame.SetValue(a_id, std::clamp(t1, 0, 100) / 100.0f);
 					curr->lock.Unlock();
-				}
+				} else
+					break;
 				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
@@ -236,7 +237,8 @@ namespace PyramidUtils::Expression {
 					curr->modifierKeyFrame.SetValue(mod1 * t3 + mod2 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
 					curr->modifierKeyFrame.SetValue(mod2 * t3 + mod1 * (1 - t3), std::clamp(t1, 0, 100) / 100.0f);
 					curr->lock.Unlock();
-				}
+				} else
+					break;
 				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getShortenedDelay(a_delay)});
 			}
@@ -245,7 +247,8 @@ namespace PyramidUtils::Expression {
 					curr->lock.Lock();
 					curr->modifierKeyFrame.SetValue(mod1, std::clamp(t1, 0, 100) / 100.0f);
 					curr->lock.Unlock();
-				}
+				} else
+					break;
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
 			
@@ -322,7 +325,8 @@ namespace PyramidUtils::Expression {
 					animData->lock.Lock();
 					animData->SetExpressionOverride(a_mood, static_cast<float>(exp_value));
 					animData->lock.Unlock();
-				}
+				} else
+					break;
 				
 				std::this_thread::sleep_for(std::chrono::milliseconds{ getDelayPlusRandom(a_delay) });
 			}
