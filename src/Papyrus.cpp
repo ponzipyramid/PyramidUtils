@@ -1,6 +1,7 @@
 #include "Papyrus.h"
 #include "ActorManager.h"
 #include "Input.h"
+#include "MarkerManager.h"
 
 using namespace PyramidUtils;
 
@@ -171,6 +172,10 @@ namespace {
         a_str.replace(a_index, a_replacement.size(), a_replacement);
         return a_str;
     }
+
+    RE::TESObjectREFR* GetQuestMarker(RE::StaticFunctionTag*, RE::TESQuest* a_quest) {
+		return MarkerManager::GetQuestMarker(a_quest);
+    }
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -194,6 +199,9 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     
     // strings
     vm->RegisterFunction("ReplaceAt", PapyrusClass, ReplaceAt);
+
+    // map
+	vm->RegisterFunction("GetQuestMarker", PapyrusClass, GetQuestMarker);
 
     return true;
 }

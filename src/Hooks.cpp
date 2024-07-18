@@ -1,20 +1,22 @@
 #include "Hooks.h"
 #include "ActorManager.h"
 #include "Trampoline.h"
+#include "MarkerManager.h"
 
 using namespace PyramidUtils;
 namespace Patches
 {
+	constexpr REL::RelocationID AddMarkerId{ 50851, 51728 };
+	inline REL::Relocation<bool (*)(const void*, void*,
+		RE::NiPoint3*, const RE::RefHandle&, std::int32_t)>
+		AddMarker{ AddMarkerId };
+
 	inline uint64_t test;
 	void UpdateQuests(void* a_1, void* a_2, RE::NiPoint3* a_pos, const RE::RefHandle& a_refHandle, std::uint32_t a_markerGotoFrame,
 		RE::TESQuestTarget* a_questTarget)
 	{
-		test++;
-		if (test % 10000000) {
-			const auto marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
-
-			logger::info("UpdateQuests {}", marker != nullptr);
-		}
+		const auto marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
+		MarkerManager::SetMarker(marker);
 	}
 
 	std::uintptr_t getJmpTarget(std::uintptr_t a_addr) {
@@ -44,10 +46,7 @@ namespace Patches
 				push(r8);
 				push(r9);
 
-				//sub(rsp, 0x28);
-				mov(ptr[rsp + 0x28], rbx);  // rbx = TESQuestTarget*
 				call(ptr[rip + hookLabel]);
-				//add(rsp, 0x28);
 
 				pop(r9);
 				pop(r8);
@@ -83,7 +82,7 @@ namespace Patches
 void Hooks::Install() {
 	logger::info("installing hooks");
 	
-    SKSE::AllocTrampoline(28);
+    SKSE::AllocTrampoline(64);
     auto& trampoline = SKSE::GetTrampoline();
 
     REL::Relocation<std::uintptr_t> det{ REL::RelocationID(41659, 42742), REL::VariantOffset(0x526, 0x67B, 0x67B) };
@@ -94,6 +93,9 @@ void Hooks::Install() {
 
     REL::Relocation<std::uintptr_t> amd{ REL::RelocationID(36359, 37350), REL::VariantOffset(0xF0, 0xFB, 0xFB) };
     _ApplyMovementDelta = trampoline.write_call<5>(amd.address(), ApplyMovementDelta);
+
+	REL::Relocation<std::uintptr_t> gqm{ REL::RelocationID{ 50826, 51691 }, REL::VariantOffset{ 0xFB, 0x167, 0xFB } };
+	_GetQuestMarkerRef = trampoline.write_call<5>(gqm.address(), GetQuestMarkerRef);
 
 	Patches::Install();
 }
@@ -119,4 +121,10 @@ uint8_t* Hooks::DoDetect(RE::Actor* viewer, RE::Actor* target, int32_t& detectva
     }
     
     return _DoDetect(viewer, target, detectval, unk04, unk05, unk06, pos, unk08, unk09, unk10);
+}
+
+RE::RefHandle Hooks::GetQuestMarkerRef(int64_t a_1, int64_t a_2, RE::TESQuest* a_3)
+{
+	MarkerManager::SetQuest(a_3);
+	return _GetQuestMarkerRef(a_1, a_2, a_3);
 }
