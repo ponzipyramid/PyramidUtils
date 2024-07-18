@@ -1,3 +1,6 @@
+#pragma warning(disable: 4702)
+#pragma warning(disable: 4100)
+
 #pragma once
 
 #include <new>
@@ -104,5 +107,6 @@ using json = nlohmann::json;
 #include <magic_enum.hpp>
 
 #include "SimpleMath.h"
+#include <detours/detours.h>
 
 using uint = uint32_t;
