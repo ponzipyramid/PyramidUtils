@@ -12,8 +12,7 @@ namespace Patches
 		AddMarker{ AddMarkerId };
 
 	inline uint64_t test;
-	void UpdateQuests(void* a_1, void* a_2, RE::NiPoint3* a_pos, const RE::RefHandle& a_refHandle, std::uint32_t a_markerGotoFrame,
-		RE::TESQuestTarget* a_questTarget)
+	void UpdateQuests(void* a_1, void* a_2, RE::NiPoint3* a_pos, const RE::RefHandle& a_refHandle, std::uint32_t a_markerGotoFrame)
 	{
 		const auto marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
 		MarkerManager::SetMarker(marker);
@@ -97,7 +96,15 @@ void Hooks::Install() {
 	REL::Relocation<std::uintptr_t> gqm{ REL::RelocationID{ 50826, 51691 }, REL::VariantOffset{ 0xFB, 0x167, 0xFB } };
 	_GetQuestMarkerRef = trampoline.write_call<5>(gqm.address(), GetQuestMarkerRef);
 
-	Patches::Install();
+	HINSTANCE dllHandle = LoadLibrary(TEXT("CompassNavigationOverhaul.dll"));
+	if (dllHandle != NULL) {
+		logger::info("installing cno patch");
+		Patches::Install();
+	} else {
+		logger::info("installing cno hook");
+		REL::Relocation<std::uintptr_t> udq{ REL::RelocationID{ 50826, 51691 }, REL::VariantOffset{ 0x114, 0x180, 0x114 } };
+		_UpdateQuests = trampoline.write_call<5>(udq.address(), UpdateQuests);
+	}
 }
 
 void Hooks::UpdateCombat(RE::Character* a_this) {
@@ -127,4 +134,11 @@ RE::RefHandle Hooks::GetQuestMarkerRef(int64_t a_1, int64_t a_2, RE::TESQuest* a
 {
 	MarkerManager::SetQuest(a_3);
 	return _GetQuestMarkerRef(a_1, a_2, a_3);
+}
+
+bool Hooks::UpdateQuests(void* a_1, void* a_2, RE::NiPoint3* a_3, const RE::RefHandle& a_refHandle, std::int32_t a_5)
+{
+	const auto marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
+	MarkerManager::SetMarker(marker);
+	return _UpdateQuests(a_1, a_2, a_3, a_refHandle, a_5);
 }
