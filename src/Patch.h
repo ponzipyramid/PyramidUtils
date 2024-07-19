@@ -4,78 +4,40 @@
 
 using namespace PyramidUtils;
 
-namespace Patch
+namespace PyramidUtils
 {
-	constexpr REL::RelocationID AddMarkerId{ 50851, 51728 };
-	inline REL::Relocation<bool (*)(const void*, void*,
-		RE::NiPoint3*, const RE::RefHandle&, std::int32_t)>
-		AddMarker{ AddMarkerId };
-
-	inline uint64_t test;
-	void UpdateQuests(void* a_1, void* a_2, RE::NiPoint3* a_pos, const RE::RefHandle& a_refHandle, std::uint32_t a_markerGotoFrame)
+	class Patch
 	{
-		const auto marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
-		MarkerManager::SetMarker(marker);
-	}
+	public:
+		static void Install();
+	private:
+		static bool UpdateQuests(void* a_1, void* a_2, void* a_pos, void* a_refHandle, void* a_markerGotoFrame, void* a_questTarget);
+		static inline REL::Relocation<decltype(UpdateQuests)> _UpdateQuests;
 
-	std::uintptr_t getJmpTarget(std::uintptr_t a_addr)
-	{
-		uint8_t opcode = *(uint8_t*)a_addr;
-
-		if (opcode != 0xE9)
-			return (uintptr_t)-1;
-
-		int32_t offset = *(int32_t*)(a_addr + 1);
-
-		uintptr_t target = a_addr + 5 + offset;
-
-		return target;
-	}
-
-	struct UpdateQuestsHook : hooks::Hook<5>
-	{
-		struct HookCodeGenerator : Xbyak::CodeGenerator
+		struct UpdateQuestsHook : hooks::Hook<5>
 		{
-			HookCodeGenerator(std::uintptr_t a_cnoAddr)
+			struct HookCodeGenerator : Xbyak::CodeGenerator
 			{
-				Xbyak::Label hookLabel;
-				Xbyak::Label cnoLabel;
+				HookCodeGenerator(std::uintptr_t a_hookedAddress)
+				{
+					Xbyak::Label hookLabel;
+					Xbyak::Label retnLabel;
 
-				push(rcx);
-				push(rdx);
-				push(r8);
-				push(r9);
+					mov(ptr[rsp + 0x28], rbx);  // rbx = TESQuestTarget*
+					call(ptr[rip + hookLabel]);
 
-				call(ptr[rip + hookLabel]);
+					jmp(ptr[rip + retnLabel]);
 
-				pop(r9);
-				pop(r8);
-				pop(rdx);
-				pop(rcx);
+					L(hookLabel), dq(reinterpret_cast<std::uintptr_t>(&UpdateQuests));
+					L(retnLabel), dq(a_hookedAddress + 5);
 
-				jmp(ptr[rip + cnoLabel]);
+					ready();
+				}
+			};
 
-				L(hookLabel), dq(reinterpret_cast<std::uintptr_t>(&UpdateQuests));
-				L(cnoLabel), dq(a_cnoAddr);
-
-				ready();
-			}
+			UpdateQuestsHook(std::uintptr_t a_hookedAddress) :
+				Hook{ a_hookedAddress, HookCodeGenerator{ a_hookedAddress } }
+			{}
 		};
-
-		UpdateQuestsHook(std::uintptr_t a_hookedAddress, uintptr_t a_cnoAddr) :
-			Hook{ a_hookedAddress, HookCodeGenerator{ a_cnoAddr } }
-		{}
 	};
-
-	void Install()
-	{
-		const auto address = REL::RelocationID{ 50826, 51691 }.address() + REL::VariantOffset{ 0x114, 0x180, 0x114 }.offset();
-
-		const auto target = getJmpTarget(address);
-
-		UpdateQuestsHook updateQuestsHook{ address, target };
-
-		static hooks::DefaultTrampoline tramp1{ updateQuestsHook.getSize() };
-		tramp1.write_branch(updateQuestsHook);
-	}
 }
