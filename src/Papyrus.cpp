@@ -11,15 +11,20 @@ namespace {
     bool HasKeywords(RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_matchAll) {
         if (a_matchAll) {
             for (auto kwd : a_kwds) {
-                if (!a_form->HasKeywordInArray(std::vector<RE::BGSKeyword*> { kwd }, false)) {
+                if (!a_form->HasKeywordInArray(std::vector<RE::BGSKeyword*>{ kwd }, false)) {
                     return false;
                 }   
             }
             return true;
         } else {
-            return a_form->HasKeywordInArray(a_kwds, false);
-        }
+			for (auto kwd : a_kwds) {
+				if (a_form->HasKeywordInArray(std::vector<RE::BGSKeyword*>{ kwd }, false)) {
+					return true;
+				}
+			}
 
+            return false;
+        }
     }
 
     void SetActorCalmed(RE::StaticFunctionTag*, RE::Actor* a_actor, bool a_calmed) {
@@ -50,6 +55,49 @@ namespace {
         return detected_by;
     }
 
+    std::vector<RE::BGSKeyword*> WornHasKeywords(RE::StaticFunctionTag*, RE::Actor* a_actor, std::vector<RE::BGSKeyword*> a_kwds) {
+		std::unordered_set<RE::BGSKeyword*> worn;
+
+        const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
+			return a_object.IsArmor();
+		});
+
+		for (const auto& [item, invData] : inv) {
+			const auto& [count, entry] = invData;
+			if (count > 0 && entry->IsWorn()) {
+                for (const auto& kwd : a_kwds) {
+                    if (item->HasKeywordInArray(std::vector<RE::BGSKeyword*>{ kwd }, true)) {
+						worn.insert(kwd);
+                    }
+                }
+			}
+		}
+
+        return std::vector<RE::BGSKeyword*>{ worn.begin(), worn.end() };
+    }
+
+	std::vector<RE::BGSKeyword*> WornHasKeywordStrings(RE::StaticFunctionTag*, RE::Actor* a_actor, std::vector<std::string> a_kwds)
+	{
+		std::unordered_set<RE::BGSKeyword*> worn;
+
+		const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
+			return a_object.IsArmor();
+		});
+
+		for (const auto& [item, invData] : inv) {
+			const auto& [count, entry] = invData;
+			if (count > 0 && entry->IsWorn()) {
+				for (const auto& kwd : a_kwds) {
+					if (item->HasKeywordByEditorID(kwd)) {
+						worn.insert(RE::TESForm::LookupByEditorID<RE::BGSKeyword>(kwd));
+					}
+				}
+			}
+		}
+
+		return std::vector<RE::BGSKeyword*>{ worn.begin(), worn.end() };
+	}
+
     std::vector<RE::TESForm*> GetItemsByKeyword(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, std::vector<RE::BGSKeyword*> a_keywords, bool a_matchall) {
         SKSE::log::info("GetItemsByKeyword");
         std::vector<RE::TESForm*> filtered;
@@ -75,7 +123,6 @@ namespace {
         std::vector<RE::TESForm*> filtered;
 
         for (const auto& form : a_forms) {
-            logger::info("Form: {} kwd = {}, invert = {}", form->GetName(), HasKeywords(form, a_keywords, a_matchall), a_invert);
             if (HasKeywords(form, a_keywords, a_matchall) != a_invert) {
                 filtered.push_back(form);
             }
@@ -118,6 +165,25 @@ namespace {
 
         return filtered; 
     }
+
+    bool FormHasKeyword(RE::StaticFunctionTag*, RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_all)
+	{
+		return HasKeywords(a_form, a_kwds, a_all);
+    }
+
+
+    bool FormHasKeywordStrings(RE::StaticFunctionTag*, RE::TESForm* a_form, std::vector<std::string> a_kwds, bool a_all)
+	{
+		std::vector<RE::BGSKeyword*> kwds;
+		kwds.reserve(a_kwds.size());
+        for (const auto& kwdStr : a_kwds) {
+			if (const auto kwd = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(kwdStr)) {
+				kwds.push_back(kwd);
+			}
+        }
+
+		return HasKeywords(a_form, kwds, a_all);
+	}
 
     long RemoveForms(RE::StaticFunctionTag*, RE::TESObjectREFR* a_fromContainer, std::vector<RE::TESForm*> a_forms, RE::TESObjectREFR* a_toContainer) {
         SKSE::log::info("RemoveForms");
@@ -179,29 +245,37 @@ namespace {
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
+#define REGISTERPAPYRUSFUNC(name) vm->RegisterFunction(#name, PapyrusClass, name);
+
     // actors
-    vm->RegisterFunction("SetActorCalmed", PapyrusClass, SetActorCalmed);
-    vm->RegisterFunction("SetActorFrozen", PapyrusClass, SetActorFrozen);
-    vm->RegisterFunction("GetDetectedBy", PapyrusClass, GetDetectedBy);
+	REGISTERPAPYRUSFUNC(SetActorCalmed)
+    REGISTERPAPYRUSFUNC(SetActorFrozen);
+	REGISTERPAPYRUSFUNC(GetDetectedBy);
+	REGISTERPAPYRUSFUNC(WornHasKeywords);
+	REGISTERPAPYRUSFUNC(WornHasKeywordStrings);
 
     // inv processing
-    vm->RegisterFunction("GetItemsByKeyword", PapyrusClass, GetItemsByKeyword);
-    vm->RegisterFunction("FilterFormsByKeyword", PapyrusClass, FilterFormsByKeyword);
-    vm->RegisterFunction("FilterFormsByGoldValue", PapyrusClass, FilterFormsByGoldValue);
-    vm->RegisterFunction("FilterByEnchanted", PapyrusClass, FilterByEnchanted);
-    vm->RegisterFunction("RemoveForms", PapyrusClass, RemoveForms);
+    REGISTERPAPYRUSFUNC(GetItemsByKeyword);
+    REGISTERPAPYRUSFUNC(FilterFormsByKeyword);
+    REGISTERPAPYRUSFUNC(FilterFormsByGoldValue);
+    REGISTERPAPYRUSFUNC(FilterByEnchanted);
+    REGISTERPAPYRUSFUNC(RemoveForms);
+
+    // forms
+	REGISTERPAPYRUSFUNC(FormHasKeyword);
+	REGISTERPAPYRUSFUNC(FormHasKeywordStrings);
 
     // player
-    vm->RegisterFunction("GetPlayerSpeechTarget", PapyrusClass, GetPlayerSpeechTarget);
+    REGISTERPAPYRUSFUNC(GetPlayerSpeechTarget);
     
     // input
-    vm->RegisterFunction("GetButtonForDXScanCode", PapyrusClass, GetButtonForDXScanCode);
+    REGISTERPAPYRUSFUNC(GetButtonForDXScanCode);
     
     // strings
-    vm->RegisterFunction("ReplaceAt", PapyrusClass, ReplaceAt);
+    REGISTERPAPYRUSFUNC(ReplaceAt);
 
     // map
-	vm->RegisterFunction("GetQuestMarker", PapyrusClass, GetQuestMarker);
+	REGISTERPAPYRUSFUNC(GetQuestMarker);
 
     return true;
 }
