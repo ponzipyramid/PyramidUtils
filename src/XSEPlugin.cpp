@@ -49,7 +49,6 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	serialization->SetLoadCallback(Serialize::Load);
 	serialization->SetRevertCallback(Serialize::Revert);
 
-
 	logger::info("Loaded plugin {} {}", Plugin::NAME, Plugin::VERSION.string());
 
 	return true;

@@ -6,12 +6,6 @@ using namespace PyramidUtils;
 
 namespace Patch
 {
-	constexpr REL::RelocationID AddMarkerId{ 50851, 51728 };
-	inline REL::Relocation<bool (*)(const void*, void*,
-		RE::NiPoint3*, const RE::RefHandle&, std::int32_t)>
-		AddMarker{ AddMarkerId };
-
-	inline uint64_t test;
 	void UpdateQuests(void* a_1, void* a_2, RE::NiPoint3* a_pos, const RE::RefHandle& a_refHandle, std::uint32_t a_markerGotoFrame)
 	{
 		const auto marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();

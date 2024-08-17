@@ -49,7 +49,6 @@ namespace {
                     detected_by.push_back(actor);
                 }
             }
-           
         }
 
         return detected_by;
