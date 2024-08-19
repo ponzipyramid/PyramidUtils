@@ -8,24 +8,39 @@ using namespace PyramidUtils;
 namespace {
     constexpr std::string_view PapyrusClass = "PyramidUtils";
 
-    bool HasKeywords(RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_matchAll) {
-        if (a_matchAll) {
-            for (auto kwd : a_kwds) {
-                if (!a_form->HasKeywordInArray(std::vector<RE::BGSKeyword*>{ kwd }, false)) {
-                    return false;
-                }   
-            }
-            return true;
-        } else {
-			for (auto kwd : a_kwds) {
-				if (a_form->HasKeywordInArray(std::vector<RE::BGSKeyword*>{ kwd }, false)) {
-					return true;
-				}
+    bool HasKeywords(RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_matchAll)
+	{
+		if (!a_form)
+			return false;
+
+		auto keywordForm = a_form->As<RE::BGSKeywordForm>();
+
+		if (const auto arrowForm = a_form->As<RE::TESAmmo>()) {
+			keywordForm = keywordForm ? keywordForm : arrowForm->AsKeywordForm();
+		}
+
+		if (!keywordForm) {
+			return false;
+		}
+
+		for (const auto& kwd : a_kwds) {
+			if (!kwd) {
+				continue;
 			}
 
-            return false;
-        }
-    }
+			if (keywordForm->HasKeyword(kwd)) {
+				if (!a_matchAll) {
+					return true;
+				}
+			} else {
+				if (a_matchAll) {
+					return false;
+				}
+			}
+		}
+
+		return false;
+	}
 
     void SetActorCalmed(RE::StaticFunctionTag*, RE::Actor* a_actor, bool a_calmed) {
         SKSE::log::info("SetActorCalmed");
