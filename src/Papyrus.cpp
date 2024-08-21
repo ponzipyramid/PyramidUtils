@@ -256,6 +256,43 @@ namespace {
     RE::TESObjectREFR* GetQuestMarker(RE::StaticFunctionTag*, RE::TESQuest* a_quest) {
 		return MarkerManager::GetQuestMarker(a_quest);
     }
+
+    std::vector<RE::TESForm*> GetInventoryNamedObjects(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container,
+		std::vector<std::string> itemNames)
+	{
+		std::vector<RE::TESForm*> refrs;
+
+		if (!a_container) {
+			return refrs;
+		}
+
+		auto inventory = a_container->GetInventory();
+		for (const auto& [form, data] : inventory) {
+			if (!form->GetPlayable() || form->GetName()[0] == '\0')
+				continue;
+			if (data.second->IsQuestObject())
+				continue;
+
+			std::string formName = form->GetName();
+			for (const auto& iName : itemNames) {
+				std::string itemName(iName);
+
+				std::transform(itemName.begin(), itemName.end(), itemName.begin(),
+					[](unsigned char c) { return (char)std::tolower(c); });
+
+				std::transform(formName.begin(), formName.end(), formName.begin(),
+					[](unsigned char c) { return (char)std::tolower(c); });
+
+				SKSE::log::info("Processing item {} with tag {}", formName, itemName);
+
+				if (formName.find(itemName) != std::string::npos) {
+					refrs.push_back(form);
+				}
+			}
+		}
+
+		return refrs;
+	}
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -273,7 +310,8 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     REGISTERPAPYRUSFUNC(FilterFormsByKeyword);
     REGISTERPAPYRUSFUNC(FilterFormsByGoldValue);
     REGISTERPAPYRUSFUNC(FilterByEnchanted);
-    REGISTERPAPYRUSFUNC(RemoveForms);
+	REGISTERPAPYRUSFUNC(RemoveForms);
+	REGISTERPAPYRUSFUNC(GetInventoryNamedObjects);
 
     // forms
 	REGISTERPAPYRUSFUNC(FormHasKeyword);
