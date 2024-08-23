@@ -293,6 +293,15 @@ namespace {
 
 		return refrs;
 	}
+
+    void Dismount(RE::StaticFunctionTag*, RE::Actor* a_actor)
+    {
+        // source: BTPS (https://gitlab.com/Shrimperator/skyrim-mod-betterthirdpersonselection)
+		typedef __int64 (__fastcall DismountActor_func)(RE::Actor*);
+		static auto DismountActor = RELOCATION_ID(36882, 37906);
+		static auto dismount = REL::Relocation<DismountActor_func>{ DismountActor };
+		dismount(a_actor);
+    }
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -318,7 +327,8 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
 	REGISTERPAPYRUSFUNC(FormHasKeywordStrings);
 
     // player
-    REGISTERPAPYRUSFUNC(GetPlayerSpeechTarget);
+	REGISTERPAPYRUSFUNC(GetPlayerSpeechTarget);
+	REGISTERPAPYRUSFUNC(Dismount);
     
     // input
     REGISTERPAPYRUSFUNC(GetButtonForDXScanCode);
