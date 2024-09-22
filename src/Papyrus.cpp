@@ -309,8 +309,11 @@ namespace {
 		dismount(a_actor);
     }
 
-    float GetTemperFactor(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, RE::TESObjectWEAP* a_form)
+    float GetTemperFactor(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, RE::TESForm* a_form)
     {
+		if (!a_container || !a_form)
+			return 0.f;
+
 		const auto& inventory = a_container->GetInventory();
         for (const auto& [item, meta] : inventory) {
 			const auto& [_, data] = meta;
