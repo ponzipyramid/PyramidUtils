@@ -70,7 +70,10 @@ namespace {
     }
 
     std::vector<RE::BGSKeyword*> WornHasKeywords(RE::StaticFunctionTag*, RE::Actor* a_actor, std::vector<RE::BGSKeyword*> a_kwds) {
-		std::unordered_set<RE::BGSKeyword*> worn;
+		if (!a_actor)
+			return std::vector<RE::BGSKeyword*>{};
+        
+        std::unordered_set<RE::BGSKeyword*> worn;
 
         const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
 			return a_object.IsArmor();
@@ -92,6 +95,9 @@ namespace {
 
 	std::vector<RE::BGSKeyword*> WornHasKeywordStrings(RE::StaticFunctionTag*, RE::Actor* a_actor, std::vector<std::string> a_kwds)
 	{
+		if (!a_actor)
+			return std::vector<RE::BGSKeyword*>{};
+
 		std::unordered_set<RE::BGSKeyword*> worn;
 
 		const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
@@ -302,6 +308,26 @@ namespace {
 		static auto dismount = REL::Relocation<DismountActor_func>{ DismountActor };
 		dismount(a_actor);
     }
+
+    float GetTemperFactor(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container, RE::TESObjectWEAP* a_form)
+    {
+		const auto& inventory = a_container->GetInventory();
+        for (const auto& [item, meta] : inventory) {
+			const auto& [_, data] = meta;
+
+            if (item->GetFormID() == a_form->GetFormID()) {
+				if (data->extraLists) {
+					for (const auto& list : (*data->extraLists)) {
+						if (const auto extraData = list->GetByType<RE::ExtraTextDisplayData>()) {
+							return extraData->temperFactor;
+                        }
+                    }
+                }
+            }
+        }
+
+        return 0.f;
+    }
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -321,6 +347,7 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     REGISTERPAPYRUSFUNC(FilterByEnchanted);
 	REGISTERPAPYRUSFUNC(RemoveForms);
 	REGISTERPAPYRUSFUNC(GetInventoryNamedObjects);
+	REGISTERPAPYRUSFUNC(GetTemperFactor);
 
     // forms
 	REGISTERPAPYRUSFUNC(FormHasKeyword);
