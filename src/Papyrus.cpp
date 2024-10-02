@@ -186,11 +186,45 @@ namespace {
         return filtered; 
     }
 
+    std::vector<RE::TESForm*> FilterByEquippedSlot(RE::StaticFunctionTag*, std::vector<RE::TESForm*> a_forms, std::vector<int> a_slots, bool a_all)
+	{
+		SKSE::log::info("FilterByEquippedSlot");
+		std::vector<RE::TESForm*> filtered;
+
+        std::vector<RE::BGSBipedObjectForm::BipedObjectSlot> slots;
+
+        for (const auto& slot : a_slots) {
+			slots.push_back(static_cast<RE::BGSBipedObjectForm::BipedObjectSlot>(slot));
+        }
+
+		for (const auto& form : a_forms) {
+			if (const auto& armor = form->As<RE::TESObjectARMO>()) {
+				bool include = a_all;
+                for (const auto& slot : slots) {
+                    if (armor->HasPartOf(slot)) {
+                        if (!a_all) {
+							include = true;
+							break;
+                        }
+                    } else if (a_all) {
+						include = false;
+						break;
+                    }
+                }
+
+                if (include) {
+					filtered.push_back(armor);
+                }
+			}
+		}
+
+		return filtered;
+	}
+
     bool FormHasKeyword(RE::StaticFunctionTag*, RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_all)
 	{
 		return HasKeywords(a_form, a_kwds, a_all);
     }
-
 
     bool FormHasKeywordStrings(RE::StaticFunctionTag*, RE::TESForm* a_form, std::vector<std::string> a_kwds, bool a_all)
 	{
@@ -351,6 +385,7 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
 	REGISTERPAPYRUSFUNC(RemoveForms);
 	REGISTERPAPYRUSFUNC(GetInventoryNamedObjects);
 	REGISTERPAPYRUSFUNC(GetTemperFactor);
+	REGISTERPAPYRUSFUNC(FilterByEquippedSlot);
 
     // forms
 	REGISTERPAPYRUSFUNC(FormHasKeyword);
