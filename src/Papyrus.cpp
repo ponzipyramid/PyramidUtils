@@ -2,6 +2,7 @@
 #include "ActorManager.h"
 #include "Input.h"
 #include "MarkerManager.h"
+#include "Geography.h"
 
 using namespace PyramidUtils;
 
@@ -221,6 +222,11 @@ namespace {
 		return filtered;
 	}
 
+    RE::TESGlobal* GetGlobal(RE::StaticFunctionTag*, std::string a_edid)
+    {
+		return RE::TESForm::LookupByEditorID<RE::TESGlobal>(a_edid);
+    }
+
     bool FormHasKeyword(RE::StaticFunctionTag*, RE::TESForm* a_form, std::vector<RE::BGSKeyword*> a_kwds, bool a_all)
 	{
 		return HasKeywords(a_form, a_kwds, a_all);
@@ -365,6 +371,22 @@ namespace {
 
         return 0.f;
     }
+	float GetAbsDist(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref1, RE::TESObjectREFR* a_ref2)
+	{
+		return Geography::GetDistanceBetween(a_ref1, a_ref2);
+	}
+    float GetAbsPosX(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref)
+    {
+		return Geography::GetRealPosition(a_ref).x;
+    }
+	float GetAbsPosY(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref)
+	{
+		return Geography::GetRealPosition(a_ref).y;
+	}
+	float GetAbsPosZ(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref)
+	{
+		return Geography::GetRealPosition(a_ref).z;
+	}
 }
 
 bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -401,8 +423,15 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
     // strings
     REGISTERPAPYRUSFUNC(ReplaceAt);
 
-    // map
+    // geography
 	REGISTERPAPYRUSFUNC(GetQuestMarker);
+	REGISTERPAPYRUSFUNC(GetAbsDist);
+	REGISTERPAPYRUSFUNC(GetAbsPosX);
+	REGISTERPAPYRUSFUNC(GetAbsPosY);
+	REGISTERPAPYRUSFUNC(GetAbsPosZ);
+
+    // misc
+	REGISTERPAPYRUSFUNC(GetGlobal)
 
     return true;
 }
