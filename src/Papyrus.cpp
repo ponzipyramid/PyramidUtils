@@ -371,10 +371,20 @@ namespace {
 
         return 0.f;
     }
-	float GetAbsDist(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref1, RE::TESObjectREFR* a_ref2)
+	float GetAbsDistRefRef(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref1, RE::TESObjectREFR* a_ref2)
 	{
 		return Geography::GetDistanceBetween(a_ref1, a_ref2);
 	}
+	float GetAbsDistRefPos(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref1, float a_x, float a_y, float a_z)
+	{
+		return Geography::GetDistanceBetween(a_ref1, RE::NiPoint3{ a_x, a_y, a_z });
+	}
+
+    float GetAbsDistPosPos(RE::StaticFunctionTag*, float a_x1, float a_y1, float a_z1, float a_x2, float a_y2, float a_z2)
+	{
+		return Geography::GetDistanceBetween(RE::NiPoint3{ a_x1, a_y1, a_z1 }, RE::NiPoint3{ a_x2, a_y2, a_z2 });
+	}
+
     float GetAbsPosX(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref)
     {
 		return Geography::GetRealPosition(a_ref).x;
@@ -425,7 +435,9 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
 
     // geography
 	REGISTERPAPYRUSFUNC(GetQuestMarker);
-	REGISTERPAPYRUSFUNC(GetAbsDist);
+	REGISTERPAPYRUSFUNC(GetAbsDistRefRef);
+	REGISTERPAPYRUSFUNC(GetAbsDistRefPos);
+	REGISTERPAPYRUSFUNC(GetAbsDistPosPos);
 	REGISTERPAPYRUSFUNC(GetAbsPosX);
 	REGISTERPAPYRUSFUNC(GetAbsPosY);
 	REGISTERPAPYRUSFUNC(GetAbsPosZ);
