@@ -60,26 +60,30 @@ Function RegisterForAllAlphaNumericKeys(Form akForm) global
     endWhile
 EndFunction
 
-
 Form[] function GetInventoryNamedObjects(ObjectReference akContainer, string[] asNames) global native
 
 ; unlike ObjecReference.GetItemHealthPercent, this will work on items in a container (range: 0.0-1.6)
 float function GetTemperFactor(ObjectReference akContainer, Form akItem) global native
 
-GlobalVariable function GetGlobal(string asEditorID) global native
-
 ; geography
 ObjectReference function GetQuestMarker(Quest akQuest) global native
 
-float function GetAbsDistRefRef(ObjectReference akRef1, ObjectReference akRef2) global native
-float function GetAbsDistRefPos(ObjectReference akRef1, float afX, float afY, float aZ) global native
-float function GetAbsDistPosPos(float afX1, float afY1, float aZ1, float afX2, float afY2, float afZ2) global native
+; if cell is exterior gets worldspace like normal, if interior looks for external doors and their worldspace
+WorldSpace[] function GetExteriorWorldSpaces(Cell akCell) global native
+Location[] function GetExteriorLocations(Cell akCell) global native
 
+; unlike GetDistance this works even when one or both refs are in an interior or another cell
+float function GetTravelDistance(ObjectReference akRef1, ObjectReference akRef2) global native
+
+; uses worldspace offsets to get absolute position on external refs
 float function GetAbsPosX(ObjectReference akRef) global native
 float function GetAbsPosY(ObjectReference akRef) global native
 float function GetAbsPosZ(ObjectReference akRef) global native
 
-; custom console proxy functions
+; misc 
+GlobalVariable function GetGlobal(string asEditorID) global native
+
+; custom console proxy functions - ignore these
 string function ConsoleGetAbsPos(Form akRef) global
     Debug.Trace("ConsoleGetAbsPos - " + akRef)
     
@@ -93,7 +97,25 @@ string function ConsoleGetAbsPos(Form akRef) global
     float y = GetAbsPosY(ref)
     float z = GetAbsPosZ(ref)
 
-    return "Position: (" + x + ", " + y + ", " + z + ")"
+    Location loc = ref.GetCurrentLocation()
+
+    string msg = ""
+    while loc
+        if loc
+            msg += loc.GetName() + "\n"
+        endIf
+
+        Location parLoc = PO3_SKSEFunctions.GetParentLocation(loc)
+        if parLoc != loc
+            loc = parLoc
+        else
+            loc = none
+        endIf
+    endWhile
+
+    msg += "Position: (" + x + ", " + y + ", " + z + ")"
+
+    return msg
 endFunction
 
 string function ConsoleGetPlayerAbsDist(Form akRef) global
@@ -103,5 +125,5 @@ string function ConsoleGetPlayerAbsDist(Form akRef) global
         return "not a valid ref"
     endIf
 
-    return "Distance: " + GetAbsDistRefRef(Game.GetPlayer(), ref)
+    return GetTravelDistance(Game.GetPlayer(), ref)
 endFunction
