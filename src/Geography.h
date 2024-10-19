@@ -2,6 +2,70 @@
 
 namespace Geography
 {
+	inline std::vector<RE::TESWorldSpace*> GetWorldSpaces(RE::TESObjectCELL* a_cell)
+	{
+		if (a_cell->IsExteriorCell()) {
+			return std::vector<RE::TESWorldSpace*>{ a_cell->GetRuntimeData().worldSpace };
+		}
+
+		std::unordered_set<RE::TESWorldSpace*> result;
+
+		std::unordered_set<RE::TESObjectCELL*> seen;
+		std::queue<RE::TESObjectCELL*> q;
+
+		seen.insert(a_cell);
+		q.push(a_cell);
+
+		while (!q.empty()) {
+			const auto& cell = q.back();
+			q.pop();
+
+			cell->ForEachReference([&result, &q, &seen](RE::TESObjectREFR* a_ref) {
+				const auto xTeleport = a_ref->extraList.GetByType<RE::ExtraTeleport>();
+
+				if (const auto teleportData = xTeleport ? xTeleport->teleportData : nullptr) {
+					if (const auto linkedDoorRef = teleportData->linkedDoor) {
+						if (const auto linkedDoorPtr = linkedDoorRef.get()) {
+							if (const auto linkedDoor = linkedDoorPtr.get()) {
+								if (const auto& parentCell = linkedDoor->GetParentCell()) {
+									if (parentCell->IsExteriorCell()) {
+										if (const auto& world = parentCell->GetRuntimeData().worldSpace) {
+											result.insert(world);
+										}
+									} else if (!seen.contains(parentCell)) {
+										q.push(parentCell);
+										seen.insert(parentCell);
+									}
+								} else {
+									RE::NiPoint3 pos;
+									RE::NiPoint3 rot;
+									RE::TESForm* loc = nullptr;
+
+									linkedDoor->GetEditorLocation2(pos, rot, loc, nullptr);
+
+									if (loc) {
+										if (const auto& world = loc->As<RE::TESWorldSpace>()) {
+											result.insert(world);
+										} else if (const auto& nextCell = loc->As<RE::TESObjectCELL>()) {
+											if (!seen.contains(nextCell)) {
+												q.push(nextCell);
+												seen.insert(nextCell);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+		}
+
+		return std::vector<RE::TESWorldSpace*>{ result.begin(), result.end() };
+	}
+
 	// stolen from: https://github.com/alexsylex/CompassNavigationOverhaul/blob/main/include/utils/Geometry.h
 	inline RE::NiPoint3 GetRealPosition(const RE::TESObjectREFR* a_objRef)
 	{
@@ -30,10 +94,5 @@ namespace Geography
 	{
 		RE::NiPoint3 refPos = GetRealPosition(a_ref);
 		return refPos.GetDistance(a_pos);
-	}
-
-	inline float GetDistanceBetween(const RE::NiPoint3 a_pos1, const RE::NiPoint3 a_pos2)
-	{
-		return a_pos1.GetDistance(a_pos2);
 	}
 }

@@ -303,6 +303,27 @@ namespace {
 		return MarkerManager::GetQuestMarker(a_quest);
     }
 
+    std::vector<RE::TESWorldSpace*> GetExteriorWorldSpaces(RE::StaticFunctionTag*, RE::TESObjectCELL* a_cell) {
+		if (!a_cell)
+			return std::vector<RE::TESWorldSpace*>{};
+		
+        return Geography::GetWorldSpaces(a_cell);
+    }
+
+    std::vector<RE::BGSLocation*> GetExteriorLocations(RE::StaticFunctionTag*, RE::TESObjectCELL* a_cell)
+	{
+		std::vector<RE::BGSLocation*> locs;
+        
+        if (!a_cell)
+			return locs;
+
+        for (const auto& wrld : Geography::GetWorldSpaces(a_cell)) {
+			locs.push_back(wrld->location);
+        }
+
+		return locs;
+	}
+
     std::vector<RE::TESForm*> GetInventoryNamedObjects(RE::StaticFunctionTag*, RE::TESObjectREFR* a_container,
 		std::vector<std::string> itemNames)
 	{
@@ -379,12 +400,6 @@ namespace {
 	{
 		return Geography::GetDistanceBetween(a_ref1, RE::NiPoint3{ a_x, a_y, a_z });
 	}
-
-    float GetAbsDistPosPos(RE::StaticFunctionTag*, float a_x1, float a_y1, float a_z1, float a_x2, float a_y2, float a_z2)
-	{
-		return Geography::GetDistanceBetween(RE::NiPoint3{ a_x1, a_y1, a_z1 }, RE::NiPoint3{ a_x2, a_y2, a_z2 });
-	}
-
     float GetAbsPosX(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ref)
     {
 		return Geography::GetRealPosition(a_ref).x;
@@ -435,9 +450,10 @@ bool Papyrus::RegisterFunctions(RE::BSScript::IVirtualMachine* vm) {
 
     // geography
 	REGISTERPAPYRUSFUNC(GetQuestMarker);
+	REGISTERPAPYRUSFUNC(GetExteriorWorldSpaces);
+	REGISTERPAPYRUSFUNC(GetExteriorLocations);
 	REGISTERPAPYRUSFUNC(GetAbsDistRefRef);
 	REGISTERPAPYRUSFUNC(GetAbsDistRefPos);
-	REGISTERPAPYRUSFUNC(GetAbsDistPosPos);
 	REGISTERPAPYRUSFUNC(GetAbsPosX);
 	REGISTERPAPYRUSFUNC(GetAbsPosY);
 	REGISTERPAPYRUSFUNC(GetAbsPosZ);
