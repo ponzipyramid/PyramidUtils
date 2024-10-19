@@ -27,9 +27,16 @@ namespace Geography
 					if (const auto linkedDoorRef = teleportData->linkedDoor) {
 						if (const auto linkedDoorPtr = linkedDoorRef.get()) {
 							if (const auto linkedDoor = linkedDoorPtr.get()) {
-								if (const auto& parentCell = linkedDoor->GetParentCell()) {
+								auto parentCell = linkedDoor->GetParentCell();
+
+								if (!parentCell) {
+									parentCell = linkedDoor->GetSaveParentCell();
+								}
+
+								if (parentCell) {
 									if (parentCell->IsExteriorCell()) {
 										if (const auto& world = parentCell->GetRuntimeData().worldSpace) {
+											logger::info("world {} from doors: {}-{}", world->GetFormEditorID(), a_ref->GetFormID(), linkedDoor->GetFormID());
 											result.insert(world);
 										}
 									} else if (!seen.contains(parentCell)) {
@@ -37,6 +44,8 @@ namespace Geography
 										seen.insert(parentCell);
 									}
 								} else {
+									logger::info("parent nor save parent cell found");
+
 									RE::NiPoint3 pos;
 									RE::NiPoint3 rot;
 									RE::TESForm* loc = nullptr;
